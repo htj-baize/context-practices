@@ -1,0 +1,1058 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
+OUTPUT_DIR="${CASE_DIR}/outputs"
+INPUT_DIR="${CASE_DIR}/inputs"
+NETA_BIN="${CASE_DIR}/scripts/neta-local"
+CURRENT_COLLECTION_UUID=""
+CURRENT_SOURCE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --current-collection-uuid)
+      CURRENT_COLLECTION_UUID="${2:-}"
+      shift 2
+      ;;
+    --current-source)
+      CURRENT_SOURCE="${2:-}"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ ! -x "${NETA_BIN}" ]]; then
+  echo "Neta wrapper is not available at ${NETA_BIN}" >&2
+  exit 1
+fi
+
+mkdir -p "${OUTPUT_DIR}" "${INPUT_DIR}"
+
+"${NETA_BIN}" request_interactive_feed \
+  --page_index 0 \
+  --page_size 10 \
+  > "${OUTPUT_DIR}/feed.page0.json"
+
+python3 - <<'PY' "${OUTPUT_DIR}" "${NETA_BIN}" "${INPUT_DIR}" "${CURRENT_COLLECTION_UUID}" "${CURRENT_SOURCE}"
+from __future__ import annotations
+
+import collections
+import html
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+output_dir = Path(sys.argv[1])
+neta_bin = Path(sys.argv[2])
+input_dir = Path(sys.argv[3])
+requested_current_uuid = sys.argv[4].strip()
+requested_current_source = sys.argv[5].strip().lower()
+feed_payload = json.loads(
+    (output_dir / "feed.page0.json").read_text(encoding="utf-8", errors="replace")
+)
+seed_path = input_dir / "last-liked-collection.json"
+
+
+def tokenize(text: str) -> list[str]:
+    text = (text or "").lower()
+    tokens = re.findall(r"[\u4e00-\u9fff]{2,}|[a-z0-9_]{3,}", text)
+    return tokens
+
+
+GENERIC_SEMANTIC_TOKENS = {
+    "character",
+    "characters",
+    "make",
+    "image",
+    "using",
+    "core",
+    "input",
+    "brief",
+    "preset",
+    "description",
+    "reference",
+    "planning",
+    "title",
+    "uuid",
+    "design",
+    "生成",
+    "设计",
+    "角色",
+    "根据角色信息决定",
+    "根据角色设定",
+    "参考所选角色",
+    "设定角色",
+    "完整提示词",
+    "风格要求",
+    "使用",
+    "添加",
+    "展示",
+    "描述",
+    "做同款",
+    "捏同款",
+}
+
+COMMUNITY_TAG_HINTS = (
+    "捏捏",
+    "开荒团",
+    "社团",
+    "活动",
+    "首页",
+    "狂欢节",
+    "学院",
+    "大本营",
+    "小店",
+)
+
+THEME_KEYWORD_MAP = {
+    "landscape": ("江南", "园林", "风景", "竹影", "亭台", "太湖石", "花窗", "水墨", "国画", "园林风景"),
+    "comic": ("漫画", "分镜", "互动", "对话框", "心声", "剧情"),
+    "poster": ("海报", "封面", "杂志", "排版", "宣传"),
+    "festival": ("复活节", "彩蛋", "春日", "兔耳"),
+    "duo": ("双人", "2人", "duo", "双子", "mirror", "镜面"),
+    "fantasy": ("幻想", "哥特", "超现实", "契约", "精灵", "能量"),
+    "ink_style": ("水墨", "水彩", "国风", "留白", "书法"),
+}
+
+INTENT_RULES = {
+    "landscape_scene": ("江南", "园林", "风景", "竹影", "亭台", "景致"),
+    "character_comic": ("漫画", "互动", "剧情", "对话框", "心声"),
+    "event_poster": ("海报", "封面", "宣传", "展示", "排版"),
+    "object_collectible": ("彩蛋", " relic ", "物件", "底座", "材质"),
+    "dual_character": ("双人", "2girls", "duo", "镜面", "mirror"),
+}
+
+
+def unique_preserve(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if not item or item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    return result
+
+
+def run_neta_read_collection(uuid: str) -> dict[str, object]:
+    completed = subprocess.run(
+        [str(neta_bin), "read_collection", "--uuid", uuid],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"failed to read collection: {uuid}\n{completed.stderr or completed.stdout}")
+    return json.loads(completed.stdout)
+
+
+def run_neta_json_command(*args: str) -> dict[str, object]:
+    completed = subprocess.run(
+        [str(neta_bin), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"failed command: {' '.join(args)}\n{completed.stderr or completed.stdout}"
+        )
+    return json.loads(completed.stdout)
+
+
+def collection_link(uuid: str) -> str:
+    return f"https://app.nieta.art/collection/interaction?uuid={uuid}&entrance=community"
+
+
+def read_seed_uuid() -> str:
+    if not seed_path.exists():
+        return ""
+    try:
+        payload = json.loads(seed_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return ""
+    uuid = payload.get("uuid")
+    return uuid.strip() if isinstance(uuid, str) else ""
+
+
+def pick_item_from_list_command(command_name: str) -> dict[str, object] | None:
+    payload = run_neta_json_command(command_name, "--page_size", "1")
+    items = payload.get("items", [])
+    if not isinstance(items, list) or not items:
+        return None
+    item = items[0]
+    if not isinstance(item, dict):
+        return None
+    story_id = item.get("storyId")
+    if isinstance(story_id, str) and story_id.strip():
+        return item
+    return None
+
+
+def extract_feed_collections(payload: dict[str, object]) -> list[dict[str, object]]:
+    modules = payload.get("module_list", [])
+    collections: list[dict[str, object]] = []
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+        if module.get("template_id") != "NORMAL":
+            continue
+        data = module.get("json_data")
+        if not isinstance(data, dict):
+            continue
+        uuid = data.get("uuid")
+        if not isinstance(uuid, str) or not uuid.strip():
+            continue
+        collections.append(
+            {
+                "uuid": uuid,
+                "name": data.get("name", "") if isinstance(data.get("name"), str) else "",
+                "description": data.get("description", "") if isinstance(data.get("description"), str) else "",
+                "module_id": module.get("module_id", ""),
+                "template_id": module.get("template_id", ""),
+                "cover_url": data.get("coverUrl", "") if isinstance(data.get("coverUrl"), str) else "",
+                "has_video": bool(data.get("has_video", False)),
+                "is_interactive": bool(data.get("is_interactive", False)),
+                "cta_info": data.get("cta_info", {}) if isinstance(data.get("cta_info"), dict) else {},
+                "tags": data.get("tags", []) if isinstance(data.get("tags"), list) else [],
+                "creator": data.get("creator", {}) if isinstance(data.get("creator"), dict) else {},
+            }
+        )
+    return collections
+
+
+def is_community_tag(tag: str) -> bool:
+    lowered = tag.lower()
+    return any(hint in lowered for hint in COMMUNITY_TAG_HINTS)
+
+
+def derive_theme_labels(title: str, description: str, cta_blob: str) -> list[str]:
+    haystack = " ".join((title, description, cta_blob))
+    labels: list[str] = []
+    for label, markers in THEME_KEYWORD_MAP.items():
+        if any(marker.lower() in haystack.lower() for marker in markers):
+            labels.append(label)
+    return labels
+
+
+def derive_intent_labels(title: str, description: str, cta_blob: str) -> list[str]:
+    haystack = f" {title} {description} {cta_blob} ".lower()
+    labels: list[str] = []
+    for label, markers in INTENT_RULES.items():
+        if any(marker.lower() in haystack for marker in markers):
+            labels.append(label)
+    return labels
+
+
+def build_collection_profile(feed_item: dict[str, object], detail_payload: dict[str, object]) -> dict[str, object]:
+    collection = detail_payload.get("collection", {})
+    if not isinstance(collection, dict):
+        collection = {}
+
+    cta_info = collection.get("remix", {}).get("launch_prompt", {})
+    if not isinstance(cta_info, dict):
+        cta_info = {}
+
+    tags = collection.get("tags", [])
+    tag_names = []
+    if isinstance(tags, list):
+        for tag in tags:
+            if isinstance(tag, dict):
+                name = tag.get("name")
+                if isinstance(name, str) and name.strip():
+                    tag_names.append(name.strip())
+            elif isinstance(tag, str) and tag.strip():
+                tag_names.append(tag.strip())
+
+    core_input = cta_info.get("core_input", "") if isinstance(cta_info.get("core_input"), str) else ""
+    brief_input = cta_info.get("brief_input", "") if isinstance(cta_info.get("brief_input"), str) else ""
+    preset_description = collection.get("remix", {}).get("preset_description", "")
+    if not isinstance(preset_description, str):
+        preset_description = ""
+    reference_planning = collection.get("remix", {}).get("reference_planning", "")
+    if not isinstance(reference_planning, str):
+        reference_planning = ""
+    description = collection.get("description", "") if isinstance(collection.get("description"), str) else ""
+    title = collection.get("name", "") if isinstance(collection.get("name"), str) else ""
+    cta_blob = " ".join((core_input, brief_input, preset_description, reference_planning))
+    artifacts = collection.get("artifacts", [])
+    cover_url = feed_item.get("cover_url", "") if isinstance(feed_item.get("cover_url"), str) else ""
+    if not cover_url and isinstance(artifacts, list):
+        for artifact in artifacts:
+            if not isinstance(artifact, dict):
+                continue
+            url = artifact.get("url")
+            status = artifact.get("status")
+            if isinstance(url, str) and url and status == "SUCCESS":
+                cover_url = url
+                break
+
+    semantic_tokens = unique_preserve(
+        tokenize(title)
+        + tokenize(description)
+        + tokenize(core_input)
+        + tokenize(brief_input)
+        + tokenize(preset_description)
+        + tokenize(reference_planning)
+        + [tag.lower() for tag in tag_names if not is_community_tag(tag)]
+    )
+    semantic_tokens = [token for token in semantic_tokens if token not in GENERIC_SEMANTIC_TOKENS]
+
+    interaction_flags = unique_preserve(
+        [
+            "interactive" if feed_item.get("is_interactive") else "",
+            "video" if feed_item.get("has_video") else "",
+            "dual" if any(token in core_input for token in ("双人", "2人", "@{character2}", "{@character2}", "character2")) else "",
+            "comic" if any(token in core_input for token in ("漫画", "分镜")) else "",
+            "interview" if any(token in (title + description + core_input) for token in ("采访", "记者", "麦克风")) else "",
+            "roleplay" if any(token in (title + description + core_input) for token in ("角色", "演绎", "互动")) else "",
+        ]
+    )
+
+    theme_labels = derive_theme_labels(title, description, cta_blob)
+    intent_labels = derive_intent_labels(title, description, cta_blob)
+    community_tags = [tag for tag in tag_names if is_community_tag(tag)]
+    content_tags = [tag for tag in tag_names if not is_community_tag(tag)]
+    seed_list_item = feed_item.get("seed_list_item", {}) if isinstance(feed_item.get("seed_list_item"), dict) else {}
+    seed_character_names = []
+    character_list = seed_list_item.get("character_list", [])
+    if isinstance(character_list, list):
+        for character in character_list:
+            if isinstance(character, dict):
+                name = character.get("name")
+                if isinstance(name, str) and name.strip():
+                    seed_character_names.append(name.strip())
+    seed_aspect = seed_list_item.get("aspect", "") if isinstance(seed_list_item.get("aspect"), str) else ""
+    seed_like_status = seed_list_item.get("likeStatus", "") if isinstance(seed_list_item.get("likeStatus"), str) else ""
+    seed_favor_status = seed_list_item.get("favorStatus", "") if isinstance(seed_list_item.get("favorStatus"), str) else ""
+    seed_pic_count = seed_list_item.get("picCount") if isinstance(seed_list_item.get("picCount"), int) else None
+
+    return {
+        "uuid": collection.get("uuid", feed_item["uuid"]),
+        "title": title or feed_item.get("name", ""),
+        "description": description,
+        "creator_name": collection.get("creator", {}).get("name", "") if isinstance(collection.get("creator"), dict) else "",
+        "cover_url": cover_url,
+        "collection_link": collection_link(collection.get("uuid", feed_item["uuid"])),
+        "tag_names": tag_names,
+        "content_tags": content_tags,
+        "community_tags": community_tags,
+        "cta_info": {
+            "brief_input": brief_input,
+            "core_input": core_input,
+            "preset_description": preset_description,
+            "reference_planning": reference_planning,
+        },
+        "interaction_flags": interaction_flags,
+        "theme_labels": theme_labels,
+        "intent_labels": intent_labels,
+        "semantic_tokens": semantic_tokens,
+        "source_feed_item": {
+            "module_id": feed_item.get("module_id", ""),
+            "template_id": feed_item.get("template_id", ""),
+            "has_video": feed_item.get("has_video", False),
+            "is_interactive": feed_item.get("is_interactive", False),
+        },
+        "seed_list_item": seed_list_item,
+        "seed_character_names": seed_character_names,
+        "seed_aspect": seed_aspect,
+        "seed_like_status": seed_like_status,
+        "seed_favor_status": seed_favor_status,
+        "seed_pic_count": seed_pic_count,
+    }
+
+
+def build_reader_summary(current: dict[str, object], recommended: dict[str, object] | None) -> str:
+    if not recommended:
+        return "No stable next collection could be selected from the live feed."
+    evidence = recommended["evidence"]
+    lines: list[str] = []
+    if evidence.get("theme_overlap"):
+        lines.append(f"主题连续：{', '.join(evidence['theme_overlap'])}")
+    if evidence.get("intent_overlap"):
+        lines.append(f"玩法意图一致：{', '.join(evidence['intent_overlap'])}")
+    if evidence.get("interaction_overlap"):
+        lines.append(f"交互形态连续：{', '.join(evidence['interaction_overlap'])}")
+    if evidence.get("tag_overlap"):
+        lines.append(f"内容标签重合：{', '.join(evidence['tag_overlap'][:4])}")
+    if not lines and evidence.get("community_overlap"):
+        lines.append(f"仅保留社区连续性：{', '.join(evidence['community_overlap'][:3])}")
+
+    head = f"当前内容《{current['title']}》之后，推荐《{recommended['title']}》。"
+    tail = "；".join(lines) if lines else "该候选来自实时 feed，但缺少足够强的语义连续性。"
+    return f"{head}{tail}"
+
+
+def build_detail_seed_feed_item(detail_payload: dict[str, object]) -> dict[str, object]:
+    collection = detail_payload.get("collection", {})
+    if not isinstance(collection, dict):
+        raise RuntimeError("detail payload does not contain collection")
+    remix = collection.get("remix", {})
+    if not isinstance(remix, dict):
+        remix = {}
+    launch_prompt = remix.get("launch_prompt", {})
+    if not isinstance(launch_prompt, dict):
+        launch_prompt = {}
+    artifacts = collection.get("artifacts", [])
+    cover_url = ""
+    if isinstance(artifacts, list):
+        for artifact in artifacts:
+            if isinstance(artifact, dict) and artifact.get("status") == "SUCCESS" and isinstance(artifact.get("url"), str):
+                cover_url = artifact["url"]
+                break
+    return {
+        "uuid": collection.get("uuid", ""),
+        "name": collection.get("name", ""),
+        "description": collection.get("description", ""),
+        "module_id": "seed_collection",
+        "template_id": "SEED",
+        "cover_url": cover_url,
+        "has_video": any(
+            isinstance(artifact, dict) and artifact.get("modality") == "VIDEO" and artifact.get("status") == "SUCCESS"
+            for artifact in artifacts
+        ) if isinstance(artifacts, list) else False,
+        "is_interactive": True,
+        "cta_info": {"launch_prompt": launch_prompt},
+        "tags": [tag.get("name", "") for tag in collection.get("tags", []) if isinstance(tag, dict)],
+        "creator": collection.get("creator", {}) if isinstance(collection.get("creator"), dict) else {},
+    }
+
+
+def build_seed_feed_item_from_list_item(list_item: dict[str, object]) -> dict[str, object]:
+    return {
+        "uuid": list_item.get("storyId", ""),
+        "name": list_item.get("name", "") if isinstance(list_item.get("name"), str) else "",
+        "description": list_item.get("content", "") if isinstance(list_item.get("content"), str) else "",
+        "module_id": "seed_collection",
+        "template_id": "SEED",
+        "cover_url": list_item.get("coverUrl", "") if isinstance(list_item.get("coverUrl"), str) else "",
+        "has_video": bool(list_item.get("has_video", list_item.get("hasVideo", False))),
+        "is_interactive": bool(list_item.get("is_interactive", list_item.get("isInteractive", False))),
+        "cta_info": {},
+        "tags": [],
+        "creator": {
+            "uuid": list_item.get("user_uuid", ""),
+            "name": list_item.get("user_nick_name", ""),
+        },
+        "seed_list_item": list_item,
+    }
+
+
+def weighted_overlap(items_a: set[str], items_b: set[str], frequencies: collections.Counter[str], base_weight: int) -> tuple[int, list[str]]:
+    overlap = sorted(items_a & items_b)
+    score = 0
+    for token in overlap:
+        score += max(1, base_weight - max(0, frequencies[token] - 1))
+    return score, overlap
+
+
+def score_candidate(
+    current: dict[str, object],
+    candidate: dict[str, object],
+    tag_frequencies: collections.Counter[str],
+    token_frequencies: collections.Counter[str],
+    theme_frequencies: collections.Counter[str],
+) -> dict[str, object]:
+    current_tags = set(token.lower() for token in current["content_tags"])
+    candidate_tags = set(token.lower() for token in candidate["content_tags"])
+    current_tokens = set(current["semantic_tokens"])
+    candidate_tokens = set(candidate["semantic_tokens"])
+    current_flags = set(current["interaction_flags"])
+    candidate_flags = set(candidate["interaction_flags"])
+    current_themes = set(current["theme_labels"])
+    candidate_themes = set(candidate["theme_labels"])
+    current_intents = set(current["intent_labels"])
+    candidate_intents = set(candidate["intent_labels"])
+    current_community = set(token.lower() for token in current["community_tags"])
+    candidate_community = set(token.lower() for token in candidate["community_tags"])
+
+    tag_score, tag_overlap = weighted_overlap(current_tags, candidate_tags, tag_frequencies, 5)
+    token_score, token_overlap = weighted_overlap(current_tokens, candidate_tokens, token_frequencies, 4)
+    theme_score, theme_overlap = weighted_overlap(current_themes, candidate_themes, theme_frequencies, 7)
+    flag_overlap = sorted(current_flags & candidate_flags)
+    intent_overlap = sorted(current_intents & candidate_intents)
+    community_overlap = sorted(current_community & candidate_community)
+
+    score = 0
+    score += tag_score
+    score += min(token_score, 16)
+    score += theme_score
+    score += len(flag_overlap) * 3
+    score += len(intent_overlap) * 5
+    score += min(len(community_overlap), 2)
+
+    if candidate["source_feed_item"]["is_interactive"]:
+        score += 2
+    if current["creator_name"] and candidate["creator_name"] and current["creator_name"] != candidate["creator_name"]:
+        score += 1
+
+    reasons: list[str] = []
+    if theme_overlap:
+        reasons.append(f"shared theme labels: {', '.join(theme_overlap)}")
+    if intent_overlap:
+        reasons.append(f"shared intent labels: {', '.join(intent_overlap)}")
+    if flag_overlap:
+        reasons.append(f"shared interaction flags: {', '.join(flag_overlap)}")
+    if tag_overlap:
+        reasons.append(f"shared tags: {', '.join(tag_overlap[:5])}")
+    if token_overlap:
+        reasons.append(f"shared semantic tokens: {', '.join(token_overlap[:8])}")
+    if community_overlap:
+        reasons.append(f"shared community context: {', '.join(community_overlap[:3])}")
+    if not reasons:
+        reasons.append("kept as fallback candidate from the live feed")
+
+    thematic_strength = bool(theme_overlap or intent_overlap or tag_overlap)
+    continuity_only = bool(community_overlap or flag_overlap) and not thematic_strength
+    confidence = "high" if theme_overlap or len(intent_overlap) >= 2 else "medium" if thematic_strength else "low"
+    if continuity_only:
+        confidence = "low"
+
+    return {
+        "uuid": candidate["uuid"],
+        "title": candidate["title"],
+        "score": score,
+        "confidence": confidence,
+        "reason_lines": reasons,
+        "evidence": {
+            "tag_overlap": tag_overlap,
+            "semantic_overlap": token_overlap[:12],
+            "interaction_overlap": flag_overlap,
+            "theme_overlap": theme_overlap,
+            "intent_overlap": intent_overlap,
+            "community_overlap": community_overlap,
+            "continuity_only": continuity_only,
+        },
+        "profile": candidate,
+    }
+
+
+feed_collections = extract_feed_collections(feed_payload)
+if not feed_collections:
+    raise RuntimeError("no collection-like items found in feed.page0.json")
+
+resolved_seed_mode = "feed_first_item_fallback"
+seed_uuid = requested_current_uuid
+seed_list_item = None
+if seed_uuid:
+    resolved_seed_mode = "explicit_uuid"
+elif requested_current_source == "liked":
+    seed_list_item = pick_item_from_list_command("get_liked_list")
+    seed_uuid = seed_list_item.get("storyId", "").strip() if isinstance(seed_list_item, dict) and isinstance(seed_list_item.get("storyId"), str) else ""
+    resolved_seed_mode = "liked_list" if seed_uuid else "feed_first_item_fallback"
+elif requested_current_source == "favorited":
+    seed_list_item = pick_item_from_list_command("get_favor_list")
+    seed_uuid = seed_list_item.get("storyId", "").strip() if isinstance(seed_list_item, dict) and isinstance(seed_list_item.get("storyId"), str) else ""
+    resolved_seed_mode = "favor_list" if seed_uuid else "feed_first_item_fallback"
+else:
+    seed_list_item = pick_item_from_list_command("get_liked_list")
+    liked_uuid = seed_list_item.get("storyId", "").strip() if isinstance(seed_list_item, dict) and isinstance(seed_list_item.get("storyId"), str) else ""
+    if liked_uuid:
+        seed_uuid = liked_uuid
+        resolved_seed_mode = "liked_list"
+    else:
+        seed_list_item = pick_item_from_list_command("get_favor_list")
+        favor_uuid = seed_list_item.get("storyId", "").strip() if isinstance(seed_list_item, dict) and isinstance(seed_list_item.get("storyId"), str) else ""
+        if favor_uuid:
+            seed_uuid = favor_uuid
+            resolved_seed_mode = "favor_list"
+        else:
+            seed_list_item = None
+            local_seed_uuid = read_seed_uuid()
+            if local_seed_uuid:
+                seed_uuid = local_seed_uuid
+                resolved_seed_mode = "local_seed_file"
+
+current_feed_item = None
+if seed_uuid:
+    for item in feed_collections:
+        if item["uuid"] == seed_uuid:
+            current_feed_item = item
+            break
+
+if current_feed_item is not None:
+    current_detail = run_neta_read_collection(current_feed_item["uuid"])
+else:
+    if seed_uuid:
+        current_detail = run_neta_read_collection(seed_uuid)
+        current_feed_item = build_seed_feed_item_from_list_item(seed_list_item) if seed_list_item else build_detail_seed_feed_item(current_detail)
+    else:
+        current_feed_item = feed_collections[0]
+        current_detail = run_neta_read_collection(current_feed_item["uuid"])
+
+candidate_feed_items = [item for item in feed_collections if item["uuid"] != current_feed_item["uuid"]][:5]
+candidate_details = [run_neta_read_collection(item["uuid"]) for item in candidate_feed_items]
+
+current_profile = build_collection_profile(current_feed_item, current_detail)
+candidate_profiles = [
+    build_collection_profile(item, detail)
+    for item, detail in zip(candidate_feed_items, candidate_details)
+]
+
+all_profiles = [current_profile, *candidate_profiles]
+tag_frequencies = collections.Counter(
+    token.lower()
+    for profile in all_profiles
+    for token in profile["content_tags"]
+)
+token_frequencies = collections.Counter(
+    token
+    for profile in all_profiles
+    for token in profile["semantic_tokens"]
+)
+theme_frequencies = collections.Counter(
+    token
+    for profile in all_profiles
+    for token in profile["theme_labels"]
+)
+
+scored_candidates = [
+    score_candidate(current_profile, candidate, tag_frequencies, token_frequencies, theme_frequencies)
+    for candidate in candidate_profiles
+]
+scored_candidates.sort(key=lambda item: (-item["score"], item["uuid"]))
+
+recommended = scored_candidates[0] if scored_candidates else None
+fallbacks = scored_candidates[1:4] if len(scored_candidates) > 1 else []
+
+normalized = {
+    "current_collection": current_profile,
+    "candidate_collections": candidate_profiles,
+    "candidate_count": len(candidate_profiles),
+}
+
+recommendation = {
+    "case_id": "neta-next-collection-recommendation",
+    "status": "ok" if recommended else "empty",
+    "current_collection_uuid": current_profile["uuid"],
+    "current_collection_title": current_profile["title"],
+    "current_collection_cover_url": current_profile["cover_url"],
+    "current_collection_link": current_profile["collection_link"],
+    "recommended_collection_uuid": recommended["uuid"] if recommended else "",
+    "recommended_collection_title": recommended["title"] if recommended else "",
+    "recommended_collection_cover_url": recommended["profile"]["cover_url"] if recommended else "",
+    "recommended_collection_link": recommended["profile"]["collection_link"] if recommended else "",
+    "recommendation_reason": recommended["reason_lines"][0] if recommended else "",
+    "explanation": {
+        "summary": "Recommendation is reranked from the live Neta feed using the last-liked seed collection, collection detail, cta_info, content tags, theme labels, intent labels, and interaction flags.",
+        "reason_lines": recommended["reason_lines"] if recommended else [],
+    },
+    "evidence": {
+        "source": "neta_interactive_feed",
+        "selection_rule": "context_driven_rerank",
+        "current_seed_mode": resolved_seed_mode,
+        "candidate_count": len(candidate_profiles),
+        "top_candidate_score": recommended["score"] if recommended else 0,
+        "top_candidate_confidence": recommended["confidence"] if recommended else "low",
+        "top_candidate_evidence": recommended["evidence"] if recommended else {},
+    },
+    "fallback_candidates": [
+        {
+            "uuid": item["uuid"],
+            "title": item["title"],
+            "score": item["score"],
+            "confidence": item["confidence"],
+            "reason_lines": item["reason_lines"],
+        }
+        for item in fallbacks
+    ],
+}
+
+(output_dir / "normalized-feed.json").write_text(
+    json.dumps(normalized, ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+(output_dir / "current-profile.json").write_text(
+    json.dumps(current_profile, ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+(output_dir / "candidate-profiles.json").write_text(
+    json.dumps(candidate_profiles, ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+(output_dir / "recommendation.json").write_text(
+    json.dumps(recommendation, ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+
+reader_summary = build_reader_summary(current_profile, recommended)
+
+summary = f"""# Neta Next Collection Recommendation
+
+## Feed
+
+- normalized candidate count:
+  - {len(candidate_profiles)}
+
+## Current Collection
+
+- seed mode:
+  - {resolved_seed_mode}
+- uuid:
+  - {current_profile["uuid"]}
+- title:
+  - {current_profile["title"]}
+- link:
+  - {current_profile["collection_link"]}
+- interaction flags:
+  - {", ".join(current_profile["interaction_flags"]) or "none"}
+
+## Recommended Next Collection
+
+- uuid:
+  - {recommended["uuid"] if recommended else ""}
+- title:
+  - {recommended["title"] if recommended else ""}
+- link:
+  - {recommended["profile"]["collection_link"] if recommended else ""}
+- score:
+  - {recommended["score"] if recommended else 0}
+- confidence:
+  - {recommended["confidence"] if recommended else "low"}
+- selection rule:
+  - context_driven_rerank
+- primary reason:
+  - {recommended["reason_lines"][0] if recommended else "none"}
+
+## Reader Summary
+
+- summary:
+  - {reader_summary}
+"""
+
+(output_dir / "summary.md").write_text(summary, encoding="utf-8")
+
+def chips(items: list[str], empty: str = "none") -> str:
+    if not items:
+        return f'<span class="chip chip-muted">{html.escape(empty)}</span>'
+    return "".join(f'<span class="chip">{html.escape(item)}</span>' for item in items)
+
+
+def render_cover_block(profile: dict[str, object], cta_label: str) -> str:
+    cover = profile.get("cover_url", "")
+    link = profile.get("collection_link", "")
+    if not isinstance(cover, str):
+        cover = ""
+    if not isinstance(link, str):
+        link = ""
+    media = (
+        f'<a class="cover-link" href="{html.escape(link)}" target="_blank" rel="noreferrer"><img class="cover-image" src="{html.escape(cover)}" alt="{html.escape(profile.get("title", ""))}" /></a>'
+        if cover else
+        '<div class="cover-placeholder">no cover</div>'
+    )
+    action = (
+        f'<a class="open-link" href="{html.escape(link)}" target="_blank" rel="noreferrer">{html.escape(cta_label)}</a>'
+        if link else ""
+    )
+    return f'<div class="cover-block">{media}{action}</div>'
+
+
+def render_candidate_card(item: dict[str, object], rank: int, recommended_uuid: str) -> str:
+    evidence = item.get("evidence", {})
+    badge = '<span class="badge badge-win">recommended</span>' if item["uuid"] == recommended_uuid else ""
+    profile = item.get("profile", {})
+    return f"""
+    <article class="candidate-card">
+      <div class="candidate-topline">
+        <div class="candidate-rank">#{rank}</div>
+        <div class="candidate-score">{item["score"]} pts</div>
+        <div class="candidate-confidence">{html.escape(item["confidence"])}</div>
+        {badge}
+      </div>
+      {render_cover_block(profile, "open collection")}
+      <h3>{html.escape(item["title"])}</h3>
+      <p class="candidate-reason">{html.escape(item["reason_lines"][0] if item["reason_lines"] else "no reason")}</p>
+      <div class="candidate-section">
+        <div class="label">theme overlap</div>
+        <div class="chip-row">{chips(evidence.get("theme_overlap", []))}</div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">intent overlap</div>
+        <div class="chip-row">{chips(evidence.get("intent_overlap", []))}</div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">interaction overlap</div>
+        <div class="chip-row">{chips(evidence.get("interaction_overlap", []))}</div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">semantic overlap</div>
+        <div class="chip-row">{chips(evidence.get("semantic_overlap", [])[:8])}</div>
+      </div>
+    </article>
+    """
+
+
+candidate_cards = []
+for index, item in enumerate(scored_candidates, 1):
+    candidate_cards.append(
+        render_candidate_card(
+            item,
+            index,
+            recommended["uuid"] if recommended else "",
+        )
+    )
+
+report_html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neta Next Collection Recommendation</title>
+    <style>
+      :root {{
+        color-scheme: light;
+        --bg: #f4f1ea;
+        --panel: rgba(255, 252, 247, 0.92);
+        --ink: #2b241d;
+        --muted: #6d6255;
+        --line: rgba(86, 67, 49, 0.14);
+        --accent: #245f45;
+        --accent-soft: rgba(36, 95, 69, 0.12);
+        --warn: #8a5a16;
+      }}
+      * {{ box-sizing: border-box; }}
+      body {{
+        margin: 0;
+        font-family: "Iowan Old Style", "Noto Serif SC", Georgia, serif;
+        background:
+          radial-gradient(circle at top left, rgba(36,95,69,0.10), transparent 32%),
+          linear-gradient(180deg, #fbf7ef 0%, var(--bg) 100%);
+        color: var(--ink);
+      }}
+      .page {{
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }}
+      .hero {{
+        display: grid;
+        gap: 18px;
+        padding: 28px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: 0 18px 48px rgba(43, 36, 29, 0.08);
+      }}
+      .eyebrow {{
+        font: 600 12px/1.2 "SF Pro Text", "PingFang SC", sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }}
+      h1 {{
+        margin: 0;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 1.02;
+      }}
+      .hero-summary {{
+        margin: 0;
+        max-width: 800px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.65;
+      }}
+      .grid {{
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 20px;
+      }}
+      .panel {{
+        grid-column: span 12;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 22px;
+      }}
+      .panel h2 {{
+        margin: 0 0 14px;
+        font-size: 22px;
+      }}
+      .current-panel {{ grid-column: span 5; }}
+      .recommendation-panel {{ grid-column: span 7; }}
+      .candidate-panel {{ grid-column: span 12; }}
+      .stats {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }}
+      .stat {{
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font: 600 12px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }}
+      .chip-row {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }}
+      .chip, .badge {{
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font: 600 12px/1 "SF Pro Text", "PingFang SC", sans-serif;
+        background: rgba(43, 36, 29, 0.07);
+      }}
+      .chip-muted {{
+        background: rgba(43, 36, 29, 0.04);
+        color: var(--muted);
+      }}
+      .badge-win {{
+        background: rgba(36, 95, 69, 0.14);
+        color: var(--accent);
+      }}
+      .label {{
+        margin-bottom: 8px;
+        color: var(--muted);
+        font: 600 11px/1.2 "SF Pro Text", "PingFang SC", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }}
+      .candidate-list {{
+        display: grid;
+        gap: 14px;
+      }}
+      .cover-block {{
+        display: grid;
+        gap: 10px;
+        margin-bottom: 14px;
+      }}
+      .cover-image,
+      .cover-placeholder {{
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(43, 36, 29, 0.06);
+        object-fit: cover;
+      }}
+      .cover-placeholder {{
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font: 600 13px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }}
+      .open-link {{
+        width: fit-content;
+        text-decoration: none;
+        color: var(--accent);
+        font: 600 13px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }}
+      .candidate-card {{
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255,255,255,0.42);
+      }}
+      .candidate-topline {{
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font: 600 12px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }}
+      .candidate-card h3 {{
+        margin: 0 0 8px;
+        font-size: 20px;
+      }}
+      .candidate-reason {{
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.6;
+      }}
+      .candidate-section + .candidate-section {{
+        margin-top: 12px;
+      }}
+      .reader-summary {{
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(138, 90, 22, 0.08);
+        color: #5d4521;
+        line-height: 1.7;
+      }}
+      @media (max-width: 900px) {{
+        .current-panel,
+        .recommendation-panel {{
+          grid-column: span 12;
+        }}
+        .page {{
+          padding: 18px 14px 32px;
+        }}
+        .hero,
+        .panel {{
+          border-radius: 20px;
+          padding: 18px;
+        }}
+      }}
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="eyebrow">Context Practices · Real Feed Demo</div>
+        <h1>Neta Next Collection Recommendation</h1>
+        <p class="hero-summary">{html.escape(reader_summary)}</p>
+        <div class="stats">
+          <div class="stat">selection rule: context_driven_rerank</div>
+          <div class="stat">candidate count: {len(candidate_profiles)}</div>
+          <div class="stat">confidence: {html.escape(recommended["confidence"] if recommended else "low")}</div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="panel current-panel">
+          <h2>Current Collection</h2>
+          {render_cover_block(current_profile, "open current collection")}
+          <p><strong>{html.escape(current_profile["title"])}</strong></p>
+          <div class="label">theme labels</div>
+          <div class="chip-row">{chips(current_profile["theme_labels"])}</div>
+          <div class="label" style="margin-top:14px;">seed mode</div>
+          <div class="chip-row">{chips([resolved_seed_mode])}</div>
+          <div class="label" style="margin-top:14px;">intent labels</div>
+          <div class="chip-row">{chips(current_profile["intent_labels"])}</div>
+          <div class="label" style="margin-top:14px;">interaction flags</div>
+          <div class="chip-row">{chips(current_profile["interaction_flags"])}</div>
+          <div class="label" style="margin-top:14px;">content tags</div>
+          <div class="chip-row">{chips(current_profile["content_tags"])}</div>
+        </section>
+
+        <section class="panel recommendation-panel">
+          <h2>Recommended Next Collection</h2>
+          {render_cover_block(recommended["profile"], "open recommended collection") if recommended else ""}
+          <p><strong>{html.escape(recommended["title"] if recommended else "")}</strong></p>
+          <div class="reader-summary">{html.escape(reader_summary)}</div>
+          <div class="label" style="margin-top:14px;">reason lines</div>
+          <div class="chip-row">{chips(recommended["reason_lines"] if recommended else [], empty="none")}</div>
+        </section>
+
+        <section class="panel candidate-panel">
+          <h2>Candidate Rerank Board</h2>
+          <div class="candidate-list">
+            {''.join(candidate_cards)}
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
+"""
+
+(output_dir / "report.html").write_text(report_html, encoding="utf-8")
+PY
+
+echo "Demo outputs written to ${OUTPUT_DIR}"

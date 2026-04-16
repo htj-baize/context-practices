@@ -1,0 +1,80 @@
+{
+  "status": "ok",
+  "result": {
+    "recommendation": {
+      "context_fixture_id": "minimal.context",
+      "target_fixture_id": "minimal.target.needs_input",
+      "primary_skill": "context.expand",
+      "ready": false
+    },
+    "items": [
+      {
+        "rank": 1,
+        "skill_id": "context.expand",
+        "reason": "the current target is missing required inputs and should be converted into an explicit expansion plan first",
+        "suggested_args": {
+          "context_fixture_id": "minimal.context",
+          "target_fixture_id": "minimal.target.needs_input",
+          "operation_kind": "apply"
+        },
+        "missing_required_inputs": [
+          "era"
+        ],
+        "preview": {
+          "generate_kind": "context",
+          "source_kind": "source_state",
+          "build_profile": "expansion",
+          "operation_kind": "apply",
+          "source_state_stub": {
+            "era": ""
+          },
+          "notes": "fill the stub values, materialize them as source state, then run context.generate followed by context.route"
+        }
+      },
+      {
+        "rank": 2,
+        "skill_id": "context.generate",
+        "reason": "after planning expansion, generate the next context artifact that fills the missing fields",
+        "suggested_args": {
+          "generate_kind": "context"
+        }
+      },
+      {
+        "rank": 3,
+        "skill_id": "context.route",
+        "reason": "re-check the route after context has been updated",
+        "suggested_args": {
+          "context_fixture_id": "minimal.context",
+          "target_fixture_id": "minimal.target.needs_input"
+        }
+      }
+    ],
+    "route": {
+      "context_fixture_id": "minimal.context",
+      "target_fixture_id": "minimal.target.needs_input",
+      "decision": {
+        "status": "needs_context",
+        "next_skill": "context.build",
+        "reason": "target is missing required inputs from the current context",
+        "missing_required_inputs": [
+          "era"
+        ]
+      }
+    },
+    "route_inputs": {
+      "binding_ready": false,
+      "missing_required_count": 1,
+      "projected_key_count": 3
+    },
+    "consumption": {
+      "context_fixture_id": "minimal.context",
+      "target_fixture_id": "minimal.target.needs_input",
+      "ready": false,
+      "route_hint": "context.build"
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "context.recommend"
+  }
+}

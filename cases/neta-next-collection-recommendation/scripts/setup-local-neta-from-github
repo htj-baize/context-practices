@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LOCAL_DIR="${CASE_DIR}/.local"
+TOOLS_DIR="${LOCAL_DIR}/tools"
+NPM_CACHE_DIR="${LOCAL_DIR}/.npm-cache"
+VENDOR_DIR="${LOCAL_DIR}/vendor"
+REPO_DIR="${VENDOR_DIR}/neta-skills"
+ENV_FILE="${CASE_DIR}/.env.local"
+NODE_FALLBACK="/Users/joany/Desktop/baize/one-river/.one-river/shared/tools/node-current/bin/node"
+NPM_FALLBACK="/Users/joany/Desktop/baize/one-river/.one-river/shared/tools/node-current/bin/npm"
+NODE_BIN="${NODE_BIN:-}"
+NPM_BIN="${NPM_BIN:-}"
+NETA_REPO_URL="${NETA_REPO_URL:-https://github.com/htj-baize/neta-skills.git}"
+NETA_REPO_REF="${NETA_REPO_REF:-}"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+  set +a
+fi
+
+resolve_bin() {
+  local requested="$1"
+  local fallback="$2"
+  local name="$3"
+
+  if [[ -n "${requested}" && -x "${requested}" ]]; then
+    printf '%s\n' "${requested}"
+    return 0
+  fi
+
+  if command -v "${name}" >/dev/null 2>&1; then
+    command -v "${name}"
+    return 0
+  fi
+
+  if [[ -x "${fallback}" ]]; then
+    printf '%s\n' "${fallback}"
+    return 0
+  fi
+
+  echo "Unable to find ${name}. Set ${name^^}_BIN or install ${name} first." >&2
+  exit 1
+}
+
+NODE_BIN="$(resolve_bin "${NODE_BIN}" "${NODE_FALLBACK}" "node")"
+NPM_BIN="$(resolve_bin "${NPM_BIN}" "${NPM_FALLBACK}" "npm")"
+
+export PATH="$(dirname "${NODE_BIN}"):${PATH}"
+
+mkdir -p "${TOOLS_DIR}" "${NPM_CACHE_DIR}" "${VENDOR_DIR}"
+
+export npm_config_cache="${NPM_CACHE_DIR}"
+
+"${NODE_BIN}" --version
+"${NPM_BIN}" --version
+
+if [[ -d "${REPO_DIR}/.git" ]]; then
+  echo "Updating vendored Neta repo in ${REPO_DIR}"
+  git -C "${REPO_DIR}" fetch --tags --prune origin
+  if [[ -n "${NETA_REPO_REF}" ]]; then
+    git -C "${REPO_DIR}" checkout "${NETA_REPO_REF}"
+  else
+    current_branch="$(git -C "${REPO_DIR}" rev-parse --abbrev-ref HEAD)"
+    git -C "${REPO_DIR}" pull --ff-only origin "${current_branch}"
+  fi
+else
+  echo "Cloning Neta repo into ${REPO_DIR}"
+  git clone "${NETA_REPO_URL}" "${REPO_DIR}"
+  if [[ -n "${NETA_REPO_REF}" ]]; then
+    git -C "${REPO_DIR}" checkout "${NETA_REPO_REF}"
+  fi
+fi
+
+echo
+echo "Installing vendored repo dependencies"
+"${NPM_BIN}" install --prefix "${REPO_DIR}"
+
+echo "Building vendored repo CLI"
+"${NPM_BIN}" run build --prefix "${REPO_DIR}"
+
+echo
+echo "Vendored Neta repo is ready."
+echo "Repo: ${REPO_DIR}"
+echo "Wrapper: ${CASE_DIR}/scripts/neta-local --help"
+
+if [[ -x "${REPO_DIR}/bin/cli.js" ]]; then
+  echo "Built CLI: ${REPO_DIR}/bin/cli.js"
+fi
+
+if [[ -d "${REPO_DIR}/node_modules/.bin" ]]; then
+  echo "Available local bins:"
+  find "${REPO_DIR}/node_modules/.bin" -maxdepth 1 -type l -exec basename {} \; | sort
+fi

@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "result": {
+    "request": {
+      "request_kind": "operation_request",
+      "operation_id": "op_3bfc34006e8c",
+      "operation_kind": "apply",
+      "context_id": "ctx_enterprise_customer_001",
+      "target_id": "tgt_enterprise_proposal_ready_001",
+      "payload": {
+        "customer_name": "Lingzhou Manufacturing",
+        "industry": "industrial equipment",
+        "pain_points": [
+          "manual reporting",
+          "slow implementation coordination"
+        ],
+        "deployment_scope": "regional pilot",
+        "preferred_tone": "clear and practical"
+      },
+      "extensions": {
+        "target_version": "v1"
+      }
+    },
+    "request_summary": {
+      "operation_kind": "apply",
+      "payload_key_count": 5
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "operate.prepare"
+  }
+}

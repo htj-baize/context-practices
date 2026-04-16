@@ -1,0 +1,76 @@
+{
+  "case_id": "neta-next-collection-recommendation",
+  "status": "ok",
+  "current_collection_uuid": "12e5bf49-6bbf-4aa5-8338-d27600b01cec",
+  "current_collection_title": "爱莉的SBTI测试✨",
+  "current_collection_cover_url": "https://oss.talesofai.cn/picture/c2d04bf6-f05d-48e5-b3ba-d9b45df90dfb.webp",
+  "current_collection_link": "https://app.nieta.art/collection/interaction?uuid=12e5bf49-6bbf-4aa5-8338-d27600b01cec&entrance=community",
+  "recommended_collection_uuid": "935119ce-23ed-4e80-8e6c-7de8d451433c",
+  "recommended_collection_title": "【捏捏开荒团】OC心中的江南园林风光",
+  "recommended_collection_cover_url": "https://oss.talesofai.cn/sts/3d1ce6c2ac7348989e89e25f99220929/10e57101-fef1-493a-a626-6605a6a525c9.jpg",
+  "recommended_collection_link": "https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&entrance=community",
+  "recommendation_reason": "shared interaction flags: interactive",
+  "explanation": {
+    "summary": "Recommendation is reranked from the live Neta feed using the last-liked seed collection, collection detail, cta_info, content tags, theme labels, intent labels, and interaction flags.",
+    "reason_lines": [
+      "shared interaction flags: interactive",
+      "shared semantic tokens: 基于",
+      "shared community context: 捏捏"
+    ]
+  },
+  "evidence": {
+    "source": "neta_interactive_feed",
+    "selection_rule": "context_driven_rerank",
+    "current_seed_mode": "liked_list",
+    "candidate_count": 5,
+    "top_candidate_score": 10,
+    "top_candidate_confidence": "low",
+    "top_candidate_evidence": {
+      "tag_overlap": [],
+      "semantic_overlap": [
+        "基于"
+      ],
+      "interaction_overlap": [
+        "interactive"
+      ],
+      "theme_overlap": [],
+      "intent_overlap": [],
+      "community_overlap": [
+        "捏捏"
+      ],
+      "continuity_only": true
+    }
+  },
+  "fallback_candidates": [
+    {
+      "uuid": "38e764c9-0f5c-4ace-bc17-bc1c8234a8c8",
+      "title": "如果能见从前的自己✨",
+      "score": 7,
+      "confidence": "low",
+      "reason_lines": [
+        "shared interaction flags: interactive",
+        "shared community context: 捏捏"
+      ]
+    },
+    {
+      "uuid": "6c35b93c-7874-4735-aab7-5f2f09e1f2a1",
+      "title": "【捏捏开荒团】复活节了来个彩蛋罢",
+      "score": 7,
+      "confidence": "low",
+      "reason_lines": [
+        "shared interaction flags: interactive",
+        "shared community context: 捏捏"
+      ]
+    },
+    {
+      "uuid": "ac3ee99f-7e54-4b2b-9687-3fde04471269",
+      "title": "菲洛斯换装这一块",
+      "score": 7,
+      "confidence": "low",
+      "reason_lines": [
+        "shared interaction flags: interactive",
+        "shared community context: 捏捏"
+      ]
+    }
+  ]
+}

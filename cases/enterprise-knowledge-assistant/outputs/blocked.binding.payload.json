@@ -1,0 +1,30 @@
+{
+  "binding_kind": "target_binding",
+  "context_id": "ctx_enterprise_customer_001",
+  "target_id": "tgt_enterprise_proposal_missing_001",
+  "target_version": "v1",
+  "satisfied_inputs": [
+    "customer_name",
+    "industry",
+    "pain_points",
+    "deployment_scope",
+    "preferred_tone"
+  ],
+  "missing_required_inputs": [
+    "budget_band",
+    "delivery_timeline"
+  ],
+  "projected_payload": {
+    "customer_name": "Lingzhou Manufacturing",
+    "industry": "industrial equipment",
+    "pain_points": [
+      "manual reporting",
+      "slow implementation coordination"
+    ],
+    "deployment_scope": "regional pilot",
+    "preferred_tone": "clear and practical"
+  },
+  "extensions": {
+    "schema_ref": "enterprise.proposal-summary.v1"
+  }
+}

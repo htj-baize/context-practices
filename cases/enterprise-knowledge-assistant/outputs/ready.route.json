@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "result": {
+    "decision": {
+      "decision_kind": "route_decision",
+      "context_id": "ctx_enterprise_customer_001",
+      "target_id": "tgt_enterprise_proposal_ready_001",
+      "route_name": "ready_for_prepare",
+      "next_skill": "operate.prepare",
+      "reason": "binding already satisfies required target inputs",
+      "extensions": {
+        "satisfied_inputs": [
+          "customer_name",
+          "industry",
+          "pain_points",
+          "deployment_scope",
+          "preferred_tone"
+        ]
+      }
+    },
+    "route_summary": {
+      "route_name": "ready_for_prepare",
+      "next_skill": "operate.prepare"
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "operate.route"
+  }
+}

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
+CGP_BIN="${ROOT_DIR}/context-gameplay/.venv/bin/cgp"
+OUTPUT_DIR="${CASE_DIR}/outputs"
+
+if [[ ! -x "${CGP_BIN}" ]]; then
+  echo "ContextGameplay CLI is not available at ${CGP_BIN}" >&2
+  echo "Bootstrap context-gameplay first." >&2
+  exit 1
+fi
+
+mkdir -p "${OUTPUT_DIR}"
+
+"${CGP_BIN}" run game.inspect-scene \
+  > "${OUTPUT_DIR}/inspect-scene.json"
+
+"${CGP_BIN}" run game.inspect-route \
+  > "${OUTPUT_DIR}/inspect-route.ready.json"
+
+"${CGP_BIN}" run game.inspect-route \
+  --target-fixture-id minimal.target.needs_input \
+  > "${OUTPUT_DIR}/inspect-route.blocked.json"
+
+"${CGP_BIN}" run game.branch-scene \
+  --target-fixture-id minimal.target.needs_input \
+  > "${OUTPUT_DIR}/branch-scene.json"
+
+"${CGP_BIN}" run game.resolve-collectible \
+  > "${OUTPUT_DIR}/resolve-collectible.json"
+
+"${CGP_BIN}" run game.resolve-encounter \
+  > "${OUTPUT_DIR}/resolve-encounter.json"
+
+python3 - <<'PY' "${OUTPUT_DIR}"
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+output_dir = Path(sys.argv[1])
+
+scene = json.loads((output_dir / "inspect-scene.json").read_text(encoding="utf-8"))
+route_ready = json.loads((output_dir / "inspect-route.ready.json").read_text(encoding="utf-8"))
+route_blocked = json.loads((output_dir / "inspect-route.blocked.json").read_text(encoding="utf-8"))
+branch = json.loads((output_dir / "branch-scene.json").read_text(encoding="utf-8"))
+collectible = json.loads((output_dir / "resolve-collectible.json").read_text(encoding="utf-8"))
+encounter = json.loads((output_dir / "resolve-encounter.json").read_text(encoding="utf-8"))
+
+summary = f"""# Narrative World Demo
+
+## Scene
+
+- title:
+  - {scene["result"]["domain"]["scene_title"]}
+- tone:
+  - {scene["result"]["domain"]["scene_tone"]}
+
+## Route Readiness
+
+- ready route status:
+  - {route_ready["result"]["domain"]["route_status"]}
+- blocked route status:
+  - {route_blocked["result"]["domain"]["route_status"]}
+- blocked missing inputs:
+  - {", ".join(route_blocked["result"]["summary"]["missing_inputs"])}
+
+## Branching
+
+- branch status:
+  - {branch["result"]["domain"]["status"]}
+- next action:
+  - {branch["result"]["domain"]["next_action"]}
+- missing inputs:
+  - {", ".join(branch["result"]["summary"]["missing_required_inputs"])}
+
+## Resolution
+
+- collectible request kind:
+  - {collectible["result"]["summary"]["request_kind"]}
+- encounter request kind:
+  - {encounter["result"]["summary"]["request_kind"]}
+"""
+
+(output_dir / "summary.md").write_text(summary, encoding="utf-8")
+PY
+
+echo "Demo outputs written to ${OUTPUT_DIR}"

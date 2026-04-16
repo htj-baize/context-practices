@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+INPUT_DIR="${CASE_DIR}/inputs"
+
+UUID="${1:-}"
+if [[ -z "${UUID}" ]]; then
+  echo "Usage: $0 <collection-uuid>" >&2
+  exit 1
+fi
+
+mkdir -p "${INPUT_DIR}"
+
+cat > "${INPUT_DIR}/last-liked-collection.json" <<EOF
+{
+  "uuid": "${UUID}",
+  "recorded_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "source": "manual_seed"
+}
+EOF
+
+echo "Saved last-liked seed to ${INPUT_DIR}/last-liked-collection.json"

@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
+CS_BIN="${ROOT_DIR}/context-skills/.venv/bin/cs"
+OUTPUT_DIR="${CASE_DIR}/outputs"
+
+if [[ ! -x "${CS_BIN}" ]]; then
+  echo "ContextSkills CLI is not available at ${CS_BIN}" >&2
+  echo "Bootstrap context-skills first." >&2
+  exit 1
+fi
+
+mkdir -p "${OUTPUT_DIR}"
+
+"${CS_BIN}" run context.search \
+  --query misty \
+  --context-fixture-id minimal.context \
+  > "${OUTPUT_DIR}/search.json"
+
+"${CS_BIN}" run context.recommend \
+  --context-fixture-id minimal.context \
+  --target-fixture-id minimal.target.needs_input \
+  --operation-kind apply \
+  > "${OUTPUT_DIR}/recommend.json"
+
+"${CS_BIN}" run context.generate \
+  --generate-kind target \
+  --schema-ref recommendation.followup.v1 \
+  --required-inputs title,summary,reason \
+  --optional-inputs tone,channel \
+  --constraints '{"max_items": 3}' \
+  > "${OUTPUT_DIR}/generate.json"
+
+python3 - <<'PY' "${OUTPUT_DIR}"
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+output_dir = Path(sys.argv[1])
+search_payload = json.loads((output_dir / "search.json").read_text(encoding="utf-8"))
+recommend_payload = json.loads((output_dir / "recommend.json").read_text(encoding="utf-8"))
+generate_payload = json.loads((output_dir / "generate.json").read_text(encoding="utf-8"))
+
+search_result = search_payload["result"]
+recommend_result = recommend_payload["result"]
+generate_result = generate_payload["result"]
+
+top_match = ""
+if search_result["matches"]:
+    top_match = search_result["matches"][0]["path"]
+
+summary = f"""# Generative Search Recommendation Demo
+
+## Search
+
+- query:
+  - {search_result["search"]["query"]}
+- match count:
+  - {search_result["search"]["match_count"]}
+- top match path:
+  - {top_match or "none"}
+
+## Recommendation
+
+- primary skill:
+  - {recommend_result["recommendation"]["primary_skill"]}
+- ready:
+  - {str(recommend_result["recommendation"]["ready"]).lower()}
+- route next skill:
+  - {recommend_result["route"]["decision"]["next_skill"]}
+
+## Generation
+
+- artifact kind:
+  - {generate_result["generation"]["artifact_kind"]}
+- schema ref:
+  - {generate_result["target"]["schema_ref"]}
+- required inputs:
+  - {", ".join(generate_result["target"]["required_inputs"])}
+"""
+
+(output_dir / "summary.md").write_text(summary, encoding="utf-8")
+PY
+
+echo "Demo outputs written to ${OUTPUT_DIR}"

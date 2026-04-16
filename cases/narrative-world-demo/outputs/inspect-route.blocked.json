@@ -1,0 +1,128 @@
+{
+  "status": "ok",
+  "result": {
+    "domain": {
+      "skill_id": "game.inspect-route",
+      "scene_title": "Jiangnan Notes",
+      "route_status": "blocked",
+      "schema_ref": "demo.schema.v1"
+    },
+    "summary": {
+      "required_inputs": [
+        "title",
+        "summary",
+        "era"
+      ],
+      "available_inputs": [
+        "title",
+        "summary"
+      ],
+      "missing_inputs": [
+        "era"
+      ],
+      "trace_source_count": 1
+    },
+    "inspection": {
+      "inspection": {
+        "context_fixture_id": "minimal.context",
+        "target_fixture_id": "minimal.target.needs_input",
+        "include_trace": true
+      },
+      "context_summary": {
+        "scope": "source_state",
+        "payload_keys": [
+          "summary",
+          "title",
+          "tone"
+        ],
+        "extension_keys": [
+          "profile"
+        ],
+        "trace_source_count": 1,
+        "trace_transform_count": 1
+      },
+      "target_summary": {
+        "schema_ref": "demo.schema.v1",
+        "required_inputs": [
+          "title",
+          "summary",
+          "era"
+        ],
+        "optional_inputs": [
+          "tone"
+        ],
+        "constraint_keys": [
+          "max_items"
+        ]
+      },
+      "context": {
+        "context_kind": "standard_context",
+        "context_id": "ctx_demo_001",
+        "context_version": "v1",
+        "scope": "source_state",
+        "payload": {
+          "title": "Jiangnan Notes",
+          "summary": "A quiet travel log along the river market.",
+          "tone": "misty"
+        },
+        "trace": {
+          "source_refs": [
+            {
+              "source_kind": "source_state",
+              "source_ref": "./examples/minimal/context.source.json"
+            }
+          ],
+          "derived_from": [],
+          "transforms": [
+            {
+              "kind": "build",
+              "timestamp": "2026-01-01T00:00:00+00:00",
+              "notes": "starter"
+            }
+          ]
+        },
+        "extensions": {
+          "profile": "starter"
+        }
+      },
+      "trace": {
+        "source_refs": [
+          {
+            "source_kind": "source_state",
+            "source_ref": "./examples/minimal/context.source.json"
+          }
+        ],
+        "derived_from": [],
+        "transforms": [
+          {
+            "kind": "build",
+            "timestamp": "2026-01-01T00:00:00+00:00",
+            "notes": "starter"
+          }
+        ]
+      },
+      "target": {
+        "target_kind": "standard_target",
+        "target_id": "tgt_demo_002",
+        "target_version": "v1",
+        "schema_ref": "demo.schema.v1",
+        "required_inputs": [
+          "title",
+          "summary",
+          "era"
+        ],
+        "optional_inputs": [
+          "tone"
+        ],
+        "constraints": {
+          "max_items": 3
+        },
+        "extensions": {}
+      }
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "game.inspect-route"
+  }
+}

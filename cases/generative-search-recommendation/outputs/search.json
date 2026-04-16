@@ -1,0 +1,21 @@
+{
+  "status": "ok",
+  "result": {
+    "search": {
+      "query": "misty",
+      "context_fixture_id": "minimal.context",
+      "match_count": 1
+    },
+    "matches": [
+      {
+        "path": "payload.tone",
+        "value_kind": "str",
+        "preview": "misty"
+      }
+    ]
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "context.search"
+  }
+}

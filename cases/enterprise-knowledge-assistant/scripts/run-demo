@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
+CW_BIN="${ROOT_DIR}/context-weave/scripts/cw"
+OUTPUT_DIR="${CASE_DIR}/outputs"
+FIXTURE_DIR="${CASE_DIR}/fixtures"
+
+if [[ ! -x "${CW_BIN}" ]]; then
+  echo "ContextWeave CLI is not available at ${CW_BIN}" >&2
+  echo "Bootstrap context-weave first." >&2
+  exit 1
+fi
+
+mkdir -p "${OUTPUT_DIR}"
+
+"${CW_BIN}" run context.read \
+  --context-ref "${FIXTURE_DIR}/customer-context.json" \
+  > "${OUTPUT_DIR}/context.read.json"
+
+"${CW_BIN}" run target.read \
+  --target-ref "${FIXTURE_DIR}/proposal-target.json" \
+  > "${OUTPUT_DIR}/target.ready.read.json"
+
+"${CW_BIN}" run target.read \
+  --target-ref "${FIXTURE_DIR}/proposal-target.missing-inputs.json" \
+  > "${OUTPUT_DIR}/target.missing.read.json"
+
+"${CW_BIN}" run target.bind \
+  --context @"${FIXTURE_DIR}/customer-context.json" \
+  --target @"${FIXTURE_DIR}/proposal-target.missing-inputs.json" \
+  > "${OUTPUT_DIR}/blocked.binding.json"
+
+python3 - <<'PY' "${OUTPUT_DIR}/blocked.binding.json" "${OUTPUT_DIR}/blocked.binding.payload.json"
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+payload = json.loads(source.read_text(encoding="utf-8"))
+destination.write_text(
+    json.dumps(payload["result"]["binding"], ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+PY
+
+"${CW_BIN}" run operate.route \
+  --binding @"${OUTPUT_DIR}/blocked.binding.payload.json" \
+  > "${OUTPUT_DIR}/blocked.route.json"
+
+"${CW_BIN}" run target.bind \
+  --context @"${FIXTURE_DIR}/customer-context.json" \
+  --target @"${FIXTURE_DIR}/proposal-target.json" \
+  > "${OUTPUT_DIR}/ready.binding.json"
+
+python3 - <<'PY' "${OUTPUT_DIR}/ready.binding.json" "${OUTPUT_DIR}/ready.binding.payload.json"
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+payload = json.loads(source.read_text(encoding="utf-8"))
+destination.write_text(
+    json.dumps(payload["result"]["binding"], ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+PY
+
+"${CW_BIN}" run operate.route \
+  --binding @"${OUTPUT_DIR}/ready.binding.payload.json" \
+  > "${OUTPUT_DIR}/ready.route.json"
+
+"${CW_BIN}" run operate.prepare \
+  --binding @"${OUTPUT_DIR}/ready.binding.payload.json" \
+  --operation-kind apply \
+  > "${OUTPUT_DIR}/ready.request.json"
+
+python3 - <<'PY' "${OUTPUT_DIR}"
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+output_dir = Path(sys.argv[1])
+
+blocked_binding = json.loads((output_dir / "blocked.binding.json").read_text(encoding="utf-8"))
+blocked_route = json.loads((output_dir / "blocked.route.json").read_text(encoding="utf-8"))
+ready_binding = json.loads((output_dir / "ready.binding.json").read_text(encoding="utf-8"))
+ready_route = json.loads((output_dir / "ready.route.json").read_text(encoding="utf-8"))
+ready_request = json.loads((output_dir / "ready.request.json").read_text(encoding="utf-8"))
+
+summary = f"""# Enterprise Knowledge Assistant Demo
+
+## Blocked Path
+
+- missing required inputs:
+  - {", ".join(blocked_binding["result"]["binding"]["missing_required_inputs"])}
+- next skill:
+  - {blocked_route["result"]["decision"]["next_skill"]}
+
+## Ready Path
+
+- missing required inputs:
+  - none
+- next skill:
+  - {ready_route["result"]["decision"]["next_skill"]}
+- request kind:
+  - {ready_request["result"]["request"]["request_kind"]}
+- payload keys:
+  - {", ".join(sorted(ready_request["result"]["request"]["payload"].keys()))}
+"""
+
+(output_dir / "summary.md").write_text(summary, encoding="utf-8")
+PY
+
+echo "Demo outputs written to ${OUTPUT_DIR}"

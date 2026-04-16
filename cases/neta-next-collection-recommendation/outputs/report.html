@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neta Next Collection Recommendation</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1ea;
+        --panel: rgba(255, 252, 247, 0.92);
+        --ink: #2b241d;
+        --muted: #6d6255;
+        --line: rgba(86, 67, 49, 0.14);
+        --accent: #245f45;
+        --accent-soft: rgba(36, 95, 69, 0.12);
+        --warn: #8a5a16;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Iowan Old Style", "Noto Serif SC", Georgia, serif;
+        background:
+          radial-gradient(circle at top left, rgba(36,95,69,0.10), transparent 32%),
+          linear-gradient(180deg, #fbf7ef 0%, var(--bg) 100%);
+        color: var(--ink);
+      }
+      .page {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+      .hero {
+        display: grid;
+        gap: 18px;
+        padding: 28px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: 0 18px 48px rgba(43, 36, 29, 0.08);
+      }
+      .eyebrow {
+        font: 600 12px/1.2 "SF Pro Text", "PingFang SC", sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 1.02;
+      }
+      .hero-summary {
+        margin: 0;
+        max-width: 800px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.65;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 20px;
+      }
+      .panel {
+        grid-column: span 12;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 22px;
+      }
+      .panel h2 {
+        margin: 0 0 14px;
+        font-size: 22px;
+      }
+      .current-panel { grid-column: span 5; }
+      .recommendation-panel { grid-column: span 7; }
+      .candidate-panel { grid-column: span 12; }
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .stat {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font: 600 12px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip, .badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font: 600 12px/1 "SF Pro Text", "PingFang SC", sans-serif;
+        background: rgba(43, 36, 29, 0.07);
+      }
+      .chip-muted {
+        background: rgba(43, 36, 29, 0.04);
+        color: var(--muted);
+      }
+      .badge-win {
+        background: rgba(36, 95, 69, 0.14);
+        color: var(--accent);
+      }
+      .label {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font: 600 11px/1.2 "SF Pro Text", "PingFang SC", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .candidate-list {
+        display: grid;
+        gap: 14px;
+      }
+      .cover-block {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .cover-image,
+      .cover-placeholder {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(43, 36, 29, 0.06);
+        object-fit: cover;
+      }
+      .cover-placeholder {
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font: 600 13px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }
+      .open-link {
+        width: fit-content;
+        text-decoration: none;
+        color: var(--accent);
+        font: 600 13px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }
+      .candidate-card {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255,255,255,0.42);
+      }
+      .candidate-topline {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font: 600 12px/1 "SF Pro Text", "PingFang SC", sans-serif;
+      }
+      .candidate-card h3 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      .candidate-reason {
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .candidate-section + .candidate-section {
+        margin-top: 12px;
+      }
+      .reader-summary {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(138, 90, 22, 0.08);
+        color: #5d4521;
+        line-height: 1.7;
+      }
+      @media (max-width: 900px) {
+        .current-panel,
+        .recommendation-panel {
+          grid-column: span 12;
+        }
+        .page {
+          padding: 18px 14px 32px;
+        }
+        .hero,
+        .panel {
+          border-radius: 20px;
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="eyebrow">Context Practices · Real Feed Demo</div>
+        <h1>Neta Next Collection Recommendation</h1>
+        <p class="hero-summary">当前内容《爱莉的SBTI测试✨》之后，推荐《【捏捏开荒团】OC心中的江南园林风光》。交互形态连续：interactive</p>
+        <div class="stats">
+          <div class="stat">selection rule: context_driven_rerank</div>
+          <div class="stat">candidate count: 5</div>
+          <div class="stat">confidence: low</div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="panel current-panel">
+          <h2>Current Collection</h2>
+          <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=12e5bf49-6bbf-4aa5-8338-d27600b01cec&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/picture/c2d04bf6-f05d-48e5-b3ba-d9b45df90dfb.webp" alt="爱莉的SBTI测试✨" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=12e5bf49-6bbf-4aa5-8338-d27600b01cec&amp;entrance=community" target="_blank" rel="noreferrer">open current collection</a></div>
+          <p><strong>爱莉的SBTI测试✨</strong></p>
+          <div class="label">theme labels</div>
+          <div class="chip-row"><span class="chip chip-muted">none</span></div>
+          <div class="label" style="margin-top:14px;">seed mode</div>
+          <div class="chip-row"><span class="chip">liked_list</span></div>
+          <div class="label" style="margin-top:14px;">intent labels</div>
+          <div class="chip-row"><span class="chip chip-muted">none</span></div>
+          <div class="label" style="margin-top:14px;">interaction flags</div>
+          <div class="chip-row"><span class="chip">interactive</span></div>
+          <div class="label" style="margin-top:14px;">content tags</div>
+          <div class="chip-row"><span class="chip">崩坏三</span><span class="chip">SBTI</span><span class="chip">爱莉希雅</span><span class="chip">可融合🈲搞h</span></div>
+        </section>
+
+        <section class="panel recommendation-panel">
+          <h2>Recommended Next Collection</h2>
+          <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/sts/3d1ce6c2ac7348989e89e25f99220929/10e57101-fef1-493a-a626-6605a6a525c9.jpg" alt="【捏捏开荒团】OC心中的江南园林风光" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&amp;entrance=community" target="_blank" rel="noreferrer">open recommended collection</a></div>
+          <p><strong>【捏捏开荒团】OC心中的江南园林风光</strong></p>
+          <div class="reader-summary">当前内容《爱莉的SBTI测试✨》之后，推荐《【捏捏开荒团】OC心中的江南园林风光》。交互形态连续：interactive</div>
+          <div class="label" style="margin-top:14px;">reason lines</div>
+          <div class="chip-row"><span class="chip">shared interaction flags: interactive</span><span class="chip">shared semantic tokens: 基于</span><span class="chip">shared community context: 捏捏</span></div>
+        </section>
+
+        <section class="panel candidate-panel">
+          <h2>Candidate Rerank Board</h2>
+          <div class="candidate-list">
+            
+    <article class="candidate-card">
+      <div class="candidate-topline">
+        <div class="candidate-rank">#1</div>
+        <div class="candidate-score">10 pts</div>
+        <div class="candidate-confidence">low</div>
+        <span class="badge badge-win">recommended</span>
+      </div>
+      <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/sts/3d1ce6c2ac7348989e89e25f99220929/10e57101-fef1-493a-a626-6605a6a525c9.jpg" alt="【捏捏开荒团】OC心中的江南园林风光" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&amp;entrance=community" target="_blank" rel="noreferrer">open collection</a></div>
+      <h3>【捏捏开荒团】OC心中的江南园林风光</h3>
+      <p class="candidate-reason">shared interaction flags: interactive</p>
+      <div class="candidate-section">
+        <div class="label">theme overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">intent overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">interaction overlap</div>
+        <div class="chip-row"><span class="chip">interactive</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">semantic overlap</div>
+        <div class="chip-row"><span class="chip">基于</span></div>
+      </div>
+    </article>
+    
+    <article class="candidate-card">
+      <div class="candidate-topline">
+        <div class="candidate-rank">#2</div>
+        <div class="candidate-score">7 pts</div>
+        <div class="candidate-confidence">low</div>
+        
+      </div>
+      <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=38e764c9-0f5c-4ace-bc17-bc1c8234a8c8&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/screenshots/99289536-2cbe-425e-909e-701411061f4f.jpeg" alt="如果能见从前的自己✨" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=38e764c9-0f5c-4ace-bc17-bc1c8234a8c8&amp;entrance=community" target="_blank" rel="noreferrer">open collection</a></div>
+      <h3>如果能见从前的自己✨</h3>
+      <p class="candidate-reason">shared interaction flags: interactive</p>
+      <div class="candidate-section">
+        <div class="label">theme overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">intent overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">interaction overlap</div>
+        <div class="chip-row"><span class="chip">interactive</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">semantic overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+    </article>
+    
+    <article class="candidate-card">
+      <div class="candidate-topline">
+        <div class="candidate-rank">#3</div>
+        <div class="candidate-score">7 pts</div>
+        <div class="candidate-confidence">low</div>
+        
+      </div>
+      <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=6c35b93c-7874-4735-aab7-5f2f09e1f2a1&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/sts/359af92e1e4e48ea90d85005d8d9bfbf/47ef9e35-80a9-4365-b045-7cbc1b1c8c34.jpg" alt="【捏捏开荒团】复活节了来个彩蛋罢" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=6c35b93c-7874-4735-aab7-5f2f09e1f2a1&amp;entrance=community" target="_blank" rel="noreferrer">open collection</a></div>
+      <h3>【捏捏开荒团】复活节了来个彩蛋罢</h3>
+      <p class="candidate-reason">shared interaction flags: interactive</p>
+      <div class="candidate-section">
+        <div class="label">theme overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">intent overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">interaction overlap</div>
+        <div class="chip-row"><span class="chip">interactive</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">semantic overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+    </article>
+    
+    <article class="candidate-card">
+      <div class="candidate-topline">
+        <div class="candidate-rank">#4</div>
+        <div class="candidate-score">7 pts</div>
+        <div class="candidate-confidence">low</div>
+        
+      </div>
+      <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=ac3ee99f-7e54-4b2b-9687-3fde04471269&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/screenshots/1363d6f0-b508-4e2d-a7f5-0ca8b3669da0.jpeg" alt="菲洛斯换装这一块" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=ac3ee99f-7e54-4b2b-9687-3fde04471269&amp;entrance=community" target="_blank" rel="noreferrer">open collection</a></div>
+      <h3>菲洛斯换装这一块</h3>
+      <p class="candidate-reason">shared interaction flags: interactive</p>
+      <div class="candidate-section">
+        <div class="label">theme overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">intent overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">interaction overlap</div>
+        <div class="chip-row"><span class="chip">interactive</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">semantic overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+    </article>
+    
+    <article class="candidate-card">
+      <div class="candidate-topline">
+        <div class="candidate-rank">#5</div>
+        <div class="candidate-score">1 pts</div>
+        <div class="candidate-confidence">low</div>
+        
+      </div>
+      <div class="cover-block"><a class="cover-link" href="https://app.nieta.art/collection/interaction?uuid=c8c37666-84bc-473c-a9c5-d4db1b1f36c0&amp;entrance=community" target="_blank" rel="noreferrer"><img class="cover-image" src="https://oss.talesofai.cn/sts/d8c245ddbe1549f4a3b48b318cc41cb4/57f19387-a522-4683-a2de-af8522d35734.jpg" alt="梦之小说同好会全新招新贴" /></a><a class="open-link" href="https://app.nieta.art/collection/interaction?uuid=c8c37666-84bc-473c-a9c5-d4db1b1f36c0&amp;entrance=community" target="_blank" rel="noreferrer">open collection</a></div>
+      <h3>梦之小说同好会全新招新贴</h3>
+      <p class="candidate-reason">kept as fallback candidate from the live feed</p>
+      <div class="candidate-section">
+        <div class="label">theme overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">intent overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">interaction overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">semantic overlap</div>
+        <div class="chip-row"><span class="chip chip-muted">none</span></div>
+      </div>
+    </article>
+    
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

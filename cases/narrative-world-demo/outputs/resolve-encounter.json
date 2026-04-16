@@ -1,0 +1,68 @@
+{
+  "status": "ok",
+  "result": {
+    "domain": {
+      "skill_id": "game.resolve-encounter",
+      "status": "prepared",
+      "next_action": "operate.prepare"
+    },
+    "summary": {
+      "operation_kind": "apply",
+      "binding_ready": true,
+      "payload_key_count": 3,
+      "request_kind": "operation_request"
+    },
+    "composition": {
+      "compose": {
+        "status": "prepared",
+        "executed_skill": "operate.prepare",
+        "recommended_skill": null,
+        "reason": "binding is ready and has been composed into an operation request"
+      },
+      "request": {
+        "request_kind": "operation_request",
+        "operation_id": "op_650ab8ce801f",
+        "operation_kind": "apply",
+        "context_id": "ctx_demo_001",
+        "target_id": "tgt_demo_001",
+        "payload": {
+          "title": "Jiangnan Notes",
+          "summary": "A quiet travel log along the river market.",
+          "tone": "misty"
+        },
+        "extensions": {
+          "target_version": "v1"
+        }
+      },
+      "request_summary": {
+        "operation_kind": "apply",
+        "payload_key_count": 3
+      },
+      "route": {
+        "context_fixture_id": "minimal.context",
+        "target_fixture_id": "minimal.target",
+        "decision": {
+          "status": "ready",
+          "next_skill": "operate.prepare",
+          "reason": "all required target inputs are satisfied",
+          "missing_required_inputs": []
+        }
+      },
+      "route_inputs": {
+        "binding_ready": true,
+        "missing_required_count": 0,
+        "projected_key_count": 3
+      },
+      "consumption": {
+        "context_fixture_id": "minimal.context",
+        "target_fixture_id": "minimal.target",
+        "ready": true,
+        "route_hint": "operate.prepare"
+      }
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "game.resolve-encounter"
+  }
+}

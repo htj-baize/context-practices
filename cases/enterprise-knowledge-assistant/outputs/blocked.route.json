@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "result": {
+    "decision": {
+      "decision_kind": "route_decision",
+      "context_id": "ctx_enterprise_customer_001",
+      "target_id": "tgt_enterprise_proposal_missing_001",
+      "route_name": "needs_input",
+      "next_skill": "context.build",
+      "reason": "binding is missing required target inputs",
+      "extensions": {
+        "missing_required_inputs": [
+          "budget_band",
+          "delivery_timeline"
+        ]
+      }
+    },
+    "route_summary": {
+      "route_name": "needs_input",
+      "next_skill": "context.build"
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "operate.route"
+  }
+}

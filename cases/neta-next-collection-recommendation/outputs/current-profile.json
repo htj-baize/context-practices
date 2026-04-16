@@ -1,0 +1,124 @@
+{
+  "uuid": "12e5bf49-6bbf-4aa5-8338-d27600b01cec",
+  "title": "爱莉的SBTI测试✨",
+  "description": "谁懂啊！这个结果真的太贴人之律者了🥺\n来看看你的结果和我一样吗？",
+  "creator_name": "原罪深渊之主与美德天国之主",
+  "cover_url": "https://oss.talesofai.cn/picture/c2d04bf6-f05d-48e5-b3ba-d9b45df90dfb.webp",
+  "collection_link": "https://app.nieta.art/collection/interaction?uuid=12e5bf49-6bbf-4aa5-8338-d27600b01cec&entrance=community",
+  "tag_names": [
+    "捏Ta学院",
+    "崩坏三",
+    "捏捏",
+    "SBTI",
+    "爱莉希雅",
+    "可融合🈲搞h"
+  ],
+  "content_tags": [
+    "崩坏三",
+    "SBTI",
+    "爱莉希雅",
+    "可融合🈲搞h"
+  ],
+  "community_tags": [
+    "捏Ta学院",
+    "捏捏"
+  ],
+  "cta_info": {
+    "brief_input": "为{@character}做同款 SBTI 人格测试",
+    "core_input": "画面要求：低多边形风格 SBTI 人格测试结果图，布局为顶部标题",
+    "preset_description": "基于 {@character} 性格生成的低多边形风格 SBTI 人格测试结果图",
+    "reference_planning": "首先根据 {@character} 性格从 SBTI 标签库中选择匹配标签；然后生成低多边形风格图片，布局包含顶部标题、中间标签名及英文、中部 {@character} 插画、底部描述文案"
+  },
+  "interaction_flags": [
+    "interactive"
+  ],
+  "theme_labels": [],
+  "intent_labels": [],
+  "semantic_tokens": [
+    "爱莉的",
+    "sbti",
+    "测试",
+    "谁懂啊",
+    "这个结果真的太贴人之律者了",
+    "来看看你的结果和我一样吗",
+    "画面要求",
+    "低多边形风格",
+    "人格测试结果图",
+    "布局为顶部标题",
+    "人格测试",
+    "基于",
+    "性格生成的低多边形风格",
+    "首先根据",
+    "性格从",
+    "标签库中选择匹配标签",
+    "然后生成低多边形风格图片",
+    "布局包含顶部标题",
+    "中间标签名及英文",
+    "中部",
+    "插画",
+    "底部描述文案",
+    "崩坏三",
+    "爱莉希雅",
+    "可融合🈲搞h"
+  ],
+  "source_feed_item": {
+    "module_id": "seed_collection",
+    "template_id": "SEED",
+    "has_video": false,
+    "is_interactive": true
+  },
+  "seed_list_item": {
+    "id": 10479844,
+    "storyId": "12e5bf49-6bbf-4aa5-8338-d27600b01cec",
+    "name": "爱莉的SBTI测试✨",
+    "coverUrl": "https://oss.talesofai.cn/picture/c2d04bf6-f05d-48e5-b3ba-d9b45df90dfb.webp",
+    "shareUrl": "https://oss.talesofai.cn/picture/c2d04bf6-f05d-48e5-b3ba-d9b45df90dfb.webp",
+    "pageLength": 0,
+    "version": "3.0.0",
+    "api_version": null,
+    "aspect": "1824:2336",
+    "content": null,
+    "status": "PUBLISHED",
+    "isRecommended": null,
+    "score": null,
+    "userId": null,
+    "user_uuid": "4bfc6ae17bb94a77813a0a89c455e2aa",
+    "user_nick_name": "原罪深渊之主与美德天国之主",
+    "user_avatar_url": "https://oss.talesofai.cn/sts/4bfc6ae17bb94a77813a0a89c455e2aa/1eecde97-7e9a-4372-bf44-7d30ab3534fd.png",
+    "user_properties": null,
+    "activity": null,
+    "has_video": false,
+    "has_bgm": false,
+    "video_uuid": "",
+    "likeCount": 7,
+    "likeStatus": "liked",
+    "favorStatus": "not_favorited",
+    "commentCount": null,
+    "sharedCount": null,
+    "sameStyleCount": null,
+    "picCount": 1,
+    "character_list": [
+      {
+        "uuid": "ae2e6632-2dc3-472a-9035-c98442460ced",
+        "name": "人之律者",
+        "avatar_img": "https://oss.talesofai.cn/picture/efff5878-fb92-4b0f-b292-3027062c8524.webp"
+      }
+    ],
+    "mtime": "2026-04-14 22:27:07",
+    "ctime": "2026-04-12 10:01:32",
+    "images": [],
+    "is_pinned": null,
+    "hashtag_names": [],
+    "hashtag_show": null,
+    "recall_type": null,
+    "rank_score": null,
+    "is_interactive": true
+  },
+  "seed_character_names": [
+    "人之律者"
+  ],
+  "seed_aspect": "1824:2336",
+  "seed_like_status": "liked",
+  "seed_favor_status": "not_favorited",
+  "seed_pic_count": 1
+}

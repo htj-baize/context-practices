@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="${CASE_DIR}/.local/vendor/neta-skills"
+PRIMARY_BIN="${REPO_DIR}/bin/cli.js"
+SECONDARY_BIN="${REPO_DIR}/node_modules/.bin/neta-cli"
+FALLBACK_BIN="${REPO_DIR}/node_modules/.bin/skills-ref"
+NODE_FALLBACK="/Users/joany/Desktop/baize/one-river/.one-river/shared/tools/node-current/bin/node"
+LOCAL_CONFIG_DIR="${CASE_DIR}/.local/config"
+ENV_FILE="${CASE_DIR}/.env.local"
+
+if [[ ! -d "${REPO_DIR}" ]]; then
+  echo "Vendored Neta repo is not installed." >&2
+  echo "Run: ${CASE_DIR}/scripts/setup-local-neta-from-github" >&2
+  exit 1
+fi
+
+if command -v node >/dev/null 2>&1; then
+  :
+elif [[ -x "${NODE_FALLBACK}" ]]; then
+  export PATH="$(dirname "${NODE_FALLBACK}"):${PATH}"
+else
+  echo "node is not available for local neta-cli." >&2
+  exit 1
+fi
+
+mkdir -p "${LOCAL_CONFIG_DIR}"
+export NETA_CONFIG_DIR="${NETA_CONFIG_DIR:-${LOCAL_CONFIG_DIR}}"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+  set +a
+fi
+
+if [[ -f "${PRIMARY_BIN}" ]]; then
+  exec node "${PRIMARY_BIN}" "$@"
+fi
+
+if [[ -x "${SECONDARY_BIN}" ]]; then
+  exec "${SECONDARY_BIN}" "$@"
+fi
+
+if [[ -x "${FALLBACK_BIN}" ]]; then
+  exec "${FALLBACK_BIN}" "$@"
+fi
+
+echo "No known local CLI entrypoint was found in ${REPO_DIR}/node_modules/.bin" >&2
+if [[ -d "${REPO_DIR}/node_modules/.bin" ]]; then
+  echo "Available bins:" >&2
+  find "${REPO_DIR}/node_modules/.bin" -maxdepth 1 -type l -exec basename {} \; | sort >&2
+fi
+exit 1

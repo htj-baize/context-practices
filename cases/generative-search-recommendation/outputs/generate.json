@@ -1,0 +1,39 @@
+{
+  "status": "ok",
+  "result": {
+    "generation": {
+      "generate_kind": "target",
+      "artifact_kind": "standard_target",
+      "source_skill": "target.build"
+    },
+    "target": {
+      "target_kind": "standard_target",
+      "target_id": "tgt_f21c1808fa07",
+      "target_version": "v1",
+      "schema_ref": "recommendation.followup.v1",
+      "required_inputs": [
+        "title",
+        "summary",
+        "reason"
+      ],
+      "optional_inputs": [
+        "tone",
+        "channel"
+      ],
+      "constraints": {
+        "max_items": 3
+      },
+      "extensions": {}
+    },
+    "build_summary": {
+      "schema_ref": "recommendation.followup.v1",
+      "required_input_count": 3,
+      "optional_input_count": 2,
+      "constraint_key_count": 1
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "context.generate"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "status": "ok",
+  "result": {
+    "context": {
+      "context_kind": "standard_context",
+      "context_id": "ctx_enterprise_customer_001",
+      "context_version": "v1",
+      "scope": "customer_state",
+      "payload": {
+        "customer_name": "Lingzhou Manufacturing",
+        "industry": "industrial equipment",
+        "pain_points": [
+          "manual reporting",
+          "slow implementation coordination"
+        ],
+        "preferred_tone": "clear and practical",
+        "deployment_scope": "regional pilot"
+      },
+      "trace": {
+        "source_refs": [
+          {
+            "source_kind": "crm_snapshot",
+            "source_ref": "./fixtures/customer-context.json"
+          }
+        ],
+        "derived_from": [],
+        "transforms": [
+          {
+            "kind": "capture",
+            "timestamp": "2026-04-17T00:00:00+08:00",
+            "notes": "practice fixture"
+          }
+        ]
+      },
+      "extensions": {
+        "account_tier": "growth"
+      }
+    },
+    "context_metadata": {
+      "context_ref": "/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/fixtures/customer-context.json",
+      "source_kind": "raw_context"
+    }
+  },
+  "meta": {
+    "command": "run",
+    "skill_id": "context.read"
+  }
+}
