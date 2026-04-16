@@ -6,3 +6,4 @@ apps/*/node_modules
 apps/*/.next
 apps/*/out
 dist
+.env.local

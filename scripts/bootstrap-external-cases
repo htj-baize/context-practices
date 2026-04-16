@@ -9,6 +9,39 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 DEFAULT_CONTEXT_WEAVE_REPO="${CONTEXT_WEAVE_REPO:-git@github.com:htj-baize/context-weave.git}"
 DEFAULT_CONTEXT_SKILLS_REPO="${CONTEXT_SKILLS_REPO:-git@github.com:htj-baize/context-skills.git}"
 DEFAULT_CONTEXT_GAMEPLAY_REPO="${CONTEXT_GAMEPLAY_REPO:-git@github.com:htj-baize/context-gameplay.git}"
+CONTEXT_GITHUB_TOKEN="${CONTEXT_GITHUB_TOKEN:-}"
+
+load_env_file() {
+  local env_file="$1"
+  if [[ -f "${env_file}" ]]; then
+    # shellcheck disable=SC1090
+    source "${env_file}"
+  fi
+}
+
+build_clone_url() {
+  local repo_url="$1"
+  local token="$2"
+
+  if [[ -z "${token}" ]]; then
+    echo "${repo_url}"
+    return 0
+  fi
+
+  case "${repo_url}" in
+    git@github.com:*)
+      local repo_path="${repo_url#git@github.com:}"
+      echo "https://${token}@github.com/${repo_path}"
+      ;;
+    https://github.com/*)
+      local repo_path="${repo_url#https://github.com/}"
+      echo "https://${token}@github.com/${repo_path}"
+      ;;
+    *)
+      echo "${repo_url}"
+      ;;
+  esac
+}
 
 ensure_python() {
   if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
@@ -22,6 +55,7 @@ clone_or_use_repo() {
   local sibling_path="$2"
   local repo_url="$3"
   local managed_path="${EXTERNAL_DIR}/${name}"
+  local clone_url="$4"
 
   if [[ -d "${sibling_path}" ]]; then
     echo "${sibling_path}"
@@ -31,7 +65,7 @@ clone_or_use_repo() {
   if [[ ! -d "${managed_path}" ]]; then
     mkdir -p "${EXTERNAL_DIR}"
     echo "Cloning ${name} into ${managed_path}" >&2
-    git clone "${repo_url}" "${managed_path}" >&2
+    git clone "${clone_url}" "${managed_path}" >&2
   fi
 
   echo "${managed_path}"
@@ -54,13 +88,16 @@ bootstrap_repo() {
   local name="$1"
   local sibling_path="$2"
   local repo_url="$3"
+  local clone_url
 
+  clone_url="$(build_clone_url "${repo_url}" "${CONTEXT_GITHUB_TOKEN}")"
   local repo_path
-  repo_path="$(clone_or_use_repo "${name}" "${sibling_path}" "${repo_url}")"
+  repo_path="$(clone_or_use_repo "${name}" "${sibling_path}" "${repo_url}" "${clone_url}")"
   ensure_venv "${repo_path}"
   echo "${name}: ${repo_path}" >&2
 }
 
+load_env_file "${ROOT_DIR}/.env.local"
 ensure_python
 
 bootstrap_repo "context-weave" "${ROOT_DIR}/../context-weave" "${DEFAULT_CONTEXT_WEAVE_REPO}"
@@ -68,4 +105,3 @@ bootstrap_repo "context-skills" "${ROOT_DIR}/../context-skills" "${DEFAULT_CONTE
 bootstrap_repo "context-gameplay" "${ROOT_DIR}/../context-gameplay" "${DEFAULT_CONTEXT_GAMEPLAY_REPO}"
 
 echo "External case dependencies are ready." >&2
-

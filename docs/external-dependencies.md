@@ -16,6 +16,12 @@ From the repository root:
 ./context-practices/scripts/bootstrap-external-cases
 ```
 
+If you prefer HTTPS cloning for private repositories, create `.env.local` in `context-practices/` and set:
+
+```bash
+CONTEXT_GITHUB_TOKEN=your_github_token
+```
+
 This script will:
 
 1. use sibling repositories if they already exist
@@ -39,6 +45,16 @@ The wrapper resolution order is:
 2. sibling repositories in the workspace
 3. managed repositories under `context-practices/.external/`
 4. matching commands on `PATH`
+
+## Clone protocol behavior
+
+Bootstrap now supports two clone modes:
+
+1. `CONTEXT_GITHUB_TOKEN` present
+   - convert GitHub repository URLs to token-authenticated HTTPS
+2. no token present
+   - keep using the configured repository URL as-is
+   - default repository URLs remain SSH-based
 
 ## What this solves
 

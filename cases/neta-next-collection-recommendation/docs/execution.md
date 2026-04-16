@@ -2,16 +2,27 @@
 
 ## Prerequisite
 
-Create a local env file if you want the vendored CLI to authenticate automatically:
+Create a workspace-level env file if you want the vendored CLI to authenticate automatically:
 
 ```bash
-cp ./context-practices/cases/neta-next-collection-recommendation/.env.example \
-  ./context-practices/cases/neta-next-collection-recommendation/.env.local
+cp ./context-practices/.env.example \
+  ./context-practices/.env.local
 ```
 
 Then fill in at least:
 
 - `NETA_TOKEN`
+
+Optional but recommended:
+
+- `NETA_API_BASE_URL`
+- `NETA_AUTH_API_BASE_URL`
+
+Optional case-local overrides still work from:
+
+```bash
+./context-practices/cases/neta-next-collection-recommendation/.env.local
+```
 
 This case can use the shared workspace bootstrap path:
 
@@ -49,12 +60,14 @@ The case-local scripts do not depend on a hard-coded machine path for Node. They
 - the current process `PATH`
 - the user shell environment
 
-Optional LLM rerank can be enabled by adding these values to `.env.local`:
+Optional LLM rerank can be enabled by adding these values to `context-practices/.env.local`:
 
 - `NETA_RECOMMENDER_LLM_ENDPOINT`
 - `NETA_RECOMMENDER_LLM_API_KEY`
 - `NETA_RECOMMENDER_LLM_MODEL`
 - `NETA_RECOMMENDER_LLM_API_PATH`
+
+If `NETA_API_BASE_URL` is omitted, the vendored `neta-skills` CLI keeps using its own default upstream API host.
 
 When configured, the runner still performs rule rerank first and then asks the model to choose from the existing candidate set only.
 

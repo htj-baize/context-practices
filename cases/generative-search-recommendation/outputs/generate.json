@@ -8,7 +8,7 @@
     },
     "target": {
       "target_kind": "standard_target",
-      "target_id": "tgt_1e950c668783",
+      "target_id": "tgt_797196821af2",
       "target_version": "v1",
       "schema_ref": "recommendation.followup.v1",
       "required_inputs": [
