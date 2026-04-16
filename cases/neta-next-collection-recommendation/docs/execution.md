@@ -13,7 +13,7 @@ Then fill in at least:
 
 - `NETA_TOKEN`
 
-This case uses the One River local bootstrap path:
+This case can use the shared workspace bootstrap path:
 
 - [`scripts/setup-neta.sh`](/Users/joany/Desktop/baize/one-river/scripts/setup-neta.sh)
 - [`scripts/neta`](/Users/joany/Desktop/baize/one-river/scripts/neta)
@@ -42,6 +42,12 @@ and installs into:
 - `context-practices/cases/neta-next-collection-recommendation/.local/vendor/neta-skills`
 
 This path vendors the GitHub repo itself and runs `npm install` inside it. Use this mode when you want to modify the local Neta codebase for new API surfaces such as readable likes or favorites.
+
+The case-local scripts do not depend on a hard-coded machine path for Node. They resolve `node` and `npm` from:
+
+- `NODE_BIN` / `NPM_BIN` when explicitly provided
+- the current process `PATH`
+- the user shell environment
 
 Current observed state:
 

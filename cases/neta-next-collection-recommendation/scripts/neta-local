@@ -7,7 +7,6 @@ REPO_DIR="${CASE_DIR}/.local/vendor/neta-skills"
 PRIMARY_BIN="${REPO_DIR}/bin/cli.js"
 SECONDARY_BIN="${REPO_DIR}/node_modules/.bin/neta-cli"
 FALLBACK_BIN="${REPO_DIR}/node_modules/.bin/skills-ref"
-NODE_FALLBACK="/Users/joany/Desktop/baize/one-river/.one-river/shared/tools/node-current/bin/node"
 LOCAL_CONFIG_DIR="${CASE_DIR}/.local/config"
 ENV_FILE="${CASE_DIR}/.env.local"
 
@@ -17,13 +16,15 @@ if [[ ! -d "${REPO_DIR}" ]]; then
   exit 1
 fi
 
-if command -v node >/dev/null 2>&1; then
-  :
-elif [[ -x "${NODE_FALLBACK}" ]]; then
-  export PATH="$(dirname "${NODE_FALLBACK}"):${PATH}"
-else
-  echo "node is not available for local neta-cli." >&2
-  exit 1
+if ! command -v node >/dev/null 2>&1; then
+  shell_bin="${SHELL:-/bin/zsh}"
+  shell_node="$("${shell_bin}" -lic 'command -v node' 2>/dev/null | head -n 1 | tr -d '\r')"
+  if [[ -n "${shell_node}" && -x "${shell_node}" ]]; then
+    export PATH="$(dirname "${shell_node}"):${PATH}"
+  else
+    echo "node is not available for local neta-cli. Install node or expose it in the user shell environment." >&2
+    exit 1
+  fi
 fi
 
 mkdir -p "${LOCAL_CONFIG_DIR}"

@@ -63,6 +63,8 @@ This is a vendored source checkout, not a guaranteed `neta-cli` binary package. 
 
 At the time of writing, the vendored repo exposes `skills-ref` as its discovered local CLI entrypoint, and [`scripts/neta-local`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/neta-local) forwards to that entrypoint when no `neta-cli` bin exists.
 
+The case-local wrappers resolve `node` and `npm` from explicit env vars or the user shell environment. They do not require a One River-specific machine path.
+
 The main workspace still provides a reusable shared bootstrap path through:
 
 - [`scripts/setup-neta.sh`](/Users/joany/Desktop/baize/one-river/scripts/setup-neta.sh)

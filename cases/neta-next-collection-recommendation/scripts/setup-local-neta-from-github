@@ -9,8 +9,6 @@ NPM_CACHE_DIR="${LOCAL_DIR}/.npm-cache"
 VENDOR_DIR="${LOCAL_DIR}/vendor"
 REPO_DIR="${VENDOR_DIR}/neta-skills"
 ENV_FILE="${CASE_DIR}/.env.local"
-NODE_FALLBACK="/Users/joany/Desktop/baize/one-river/.one-river/shared/tools/node-current/bin/node"
-NPM_FALLBACK="/Users/joany/Desktop/baize/one-river/.one-river/shared/tools/node-current/bin/npm"
 NODE_BIN="${NODE_BIN:-}"
 NPM_BIN="${NPM_BIN:-}"
 NETA_REPO_URL="${NETA_REPO_URL:-https://github.com/htj-baize/neta-skills.git}"
@@ -25,7 +23,6 @@ fi
 
 resolve_bin() {
   local requested="$1"
-  local fallback="$2"
   local name="$3"
 
   if [[ -n "${requested}" && -x "${requested}" ]]; then
@@ -38,17 +35,20 @@ resolve_bin() {
     return 0
   fi
 
-  if [[ -x "${fallback}" ]]; then
-    printf '%s\n' "${fallback}"
+  local shell_bin="${SHELL:-/bin/zsh}"
+  local shell_candidate
+  shell_candidate="$("${shell_bin}" -lic "command -v ${name}" 2>/dev/null | head -n 1 | tr -d '\r')"
+  if [[ -n "${shell_candidate}" && -x "${shell_candidate}" ]]; then
+    printf '%s\n' "${shell_candidate}"
     return 0
   fi
 
-  echo "Unable to find ${name}. Set ${name^^}_BIN or install ${name} first." >&2
+  echo "Unable to find ${name}. Set ${name^^}_BIN or ensure ${name} is available in the user shell environment." >&2
   exit 1
 }
 
-NODE_BIN="$(resolve_bin "${NODE_BIN}" "${NODE_FALLBACK}" "node")"
-NPM_BIN="$(resolve_bin "${NPM_BIN}" "${NPM_FALLBACK}" "npm")"
+NODE_BIN="$(resolve_bin "${NODE_BIN}" "" "node")"
+NPM_BIN="$(resolve_bin "${NPM_BIN}" "" "npm")"
 
 export PATH="$(dirname "${NODE_BIN}"):${PATH}"
 
