@@ -15,8 +15,8 @@ Then fill in at least:
 
 This case can use the shared workspace bootstrap path:
 
-- [`scripts/setup-neta.sh`](/Users/joany/Desktop/baize/one-river/scripts/setup-neta.sh)
-- [`scripts/neta`](/Users/joany/Desktop/baize/one-river/scripts/neta)
+- [`scripts/setup-neta.sh`](../../../scripts/setup-neta.sh)
+- [`scripts/neta`](../../../scripts/neta)
 
 The expected setup flow is:
 
@@ -53,7 +53,7 @@ Current observed state:
 
 - the vendored repo installs successfully
 - the discovered local CLI entrypoint is `skills-ref`
-- if a future version exposes `neta-cli`, [`scripts/neta-local`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/neta-local) will prefer that automatically
+- if a future version exposes `neta-cli`, [`scripts/neta-local`](../scripts/neta-local) will prefer that automatically
 
 ## Runner
 

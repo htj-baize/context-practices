@@ -13,14 +13,14 @@ It focuses on the public `context-gameplay` surface.
 
 ## Directory Layout
 
-- [`docs/problem-statement.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/docs/problem-statement.md)
-- [`docs/workflow.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/docs/workflow.md)
-- [`docs/execution.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/docs/execution.md)
-- [`scripts/run-demo`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/scripts/run-demo)
-- [`outputs/.gitkeep`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/outputs/.gitkeep)
-- [`outputs/summary.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/outputs/summary.md)
-- [`outputs/branch-scene.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/outputs/branch-scene.json)
-- [`outputs/resolve-encounter.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/narrative-world-demo/outputs/resolve-encounter.json)
+- [`docs/problem-statement.md`](./docs/problem-statement.md)
+- [`docs/workflow.md`](./docs/workflow.md)
+- [`docs/execution.md`](./docs/execution.md)
+- [`scripts/run-demo`](./scripts/run-demo)
+- [`outputs/.gitkeep`](./outputs/.gitkeep)
+- [`outputs/summary.md`](./outputs/summary.md)
+- [`outputs/branch-scene.json`](./outputs/branch-scene.json)
+- [`outputs/resolve-encounter.json`](./outputs/resolve-encounter.json)
 
 ## Initial Skill Chain
 

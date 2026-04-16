@@ -14,23 +14,23 @@ It is the first case in `context-practices` that is designed around a real exter
 
 ## Directory Layout
 
-- [`docs/problem-statement.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/docs/problem-statement.md)
-- [`docs/workflow.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/docs/workflow.md)
-- [`docs/execution.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/docs/execution.md)
-- [`.env.example`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/.env.example)
-- [`.gitignore`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/.gitignore)
-- [`scripts/run-demo`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/run-demo)
-- [`scripts/neta-local`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/neta-local)
-- [`scripts/setup-local-neta-from-github`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/setup-local-neta-from-github)
-- [`scripts/set-last-liked-seed`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/set-last-liked-seed)
-- [`inputs/.gitkeep`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/inputs/.gitkeep)
-- [`outputs/.gitkeep`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/.gitkeep)
-- [`outputs/summary.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/summary.md)
-- [`outputs/recommendation.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/recommendation.json)
-- [`outputs/normalized-feed.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/normalized-feed.json)
-- [`outputs/current-profile.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/current-profile.json)
-- [`outputs/candidate-profiles.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/candidate-profiles.json)
-- [`outputs/report.html`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/outputs/report.html)
+- [`docs/problem-statement.md`](./docs/problem-statement.md)
+- [`docs/workflow.md`](./docs/workflow.md)
+- [`docs/execution.md`](./docs/execution.md)
+- [`.env.example`](./.env.example)
+- [`.gitignore`](./.gitignore)
+- [`scripts/run-demo`](./scripts/run-demo)
+- [`scripts/neta-local`](./scripts/neta-local)
+- [`scripts/setup-local-neta-from-github`](./scripts/setup-local-neta-from-github)
+- [`scripts/set-last-liked-seed`](./scripts/set-last-liked-seed)
+- [`inputs/.gitkeep`](./inputs/.gitkeep)
+- [`outputs/.gitkeep`](./outputs/.gitkeep)
+- [`outputs/summary.md`](./outputs/summary.md)
+- [`outputs/recommendation.json`](./outputs/recommendation.json)
+- [`outputs/normalized-feed.json`](./outputs/normalized-feed.json)
+- [`outputs/current-profile.json`](./outputs/current-profile.json)
+- [`outputs/candidate-profiles.json`](./outputs/candidate-profiles.json)
+- [`outputs/report.html`](./outputs/report.html)
 
 ## Initial Data Source
 
@@ -48,8 +48,8 @@ This is intentionally feed-first:
 
 This case now also provides a self-contained local bootstrap path:
 
-- [`scripts/setup-local-neta-from-github`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/setup-local-neta-from-github)
-- [`scripts/neta-local`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/neta-local)
+- [`scripts/setup-local-neta-from-github`](./scripts/setup-local-neta-from-github)
+- [`scripts/neta-local`](./scripts/neta-local)
 
 It installs `neta-skills` from:
 
@@ -61,14 +61,14 @@ into:
 
 This is a vendored source checkout, not a guaranteed `neta-cli` binary package. That is intentional, so the case can patch the local repo directly when adding community APIs such as likes or favorites.
 
-At the time of writing, the vendored repo exposes `skills-ref` as its discovered local CLI entrypoint, and [`scripts/neta-local`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/scripts/neta-local) forwards to that entrypoint when no `neta-cli` bin exists.
+At the time of writing, the vendored repo exposes `skills-ref` as its discovered local CLI entrypoint, and [`scripts/neta-local`](./scripts/neta-local) forwards to that entrypoint when no `neta-cli` bin exists.
 
 The case-local wrappers resolve `node` and `npm` from explicit env vars or the user shell environment. They do not require a One River-specific machine path.
 
 The main workspace still provides a reusable shared bootstrap path through:
 
-- [`scripts/setup-neta.sh`](/Users/joany/Desktop/baize/one-river/scripts/setup-neta.sh)
-- [`scripts/neta`](/Users/joany/Desktop/baize/one-river/scripts/neta)
+- [`scripts/setup-neta.sh`](../../../scripts/setup-neta.sh)
+- [`scripts/neta`](../../../scripts/neta)
 
 This gives the case two modes:
 
@@ -82,7 +82,7 @@ The current collection is resolved in this order:
 1. `--current-collection-uuid`
 2. `get_liked_list`
 3. `get_favor_list`
-4. [`inputs/last-liked-collection.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/inputs/last-liked-collection.json) if it exists
+4. [`inputs/last-liked-collection.json`](./inputs/last-liked-collection.json) if it exists
 5. first valid collection in the live feed as fallback
 
 This is intentionally pragmatic:
@@ -96,7 +96,7 @@ The case-local scripts automatically read:
 
 - `cases/neta-next-collection-recommendation/.env.local`
 
-Use [` .env.example `](/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation/.env.example) as the template. The most important value is:
+Use [` .env.example `](./.env.example) as the template. The most important value is:
 
 - `NETA_TOKEN`
 

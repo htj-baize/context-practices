@@ -12,14 +12,14 @@ It is intentionally built on the current public `context-skills` surface.
 
 ## Directory Layout
 
-- [`docs/problem-statement.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/docs/problem-statement.md)
-- [`docs/workflow.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/docs/workflow.md)
-- [`docs/execution.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/docs/execution.md)
-- [`scripts/run-demo`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/scripts/run-demo)
-- [`outputs/.gitkeep`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/outputs/.gitkeep)
-- [`outputs/summary.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/outputs/summary.md)
-- [`outputs/recommend.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/outputs/recommend.json)
-- [`outputs/generate.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/generative-search-recommendation/outputs/generate.json)
+- [`docs/problem-statement.md`](./docs/problem-statement.md)
+- [`docs/workflow.md`](./docs/workflow.md)
+- [`docs/execution.md`](./docs/execution.md)
+- [`scripts/run-demo`](./scripts/run-demo)
+- [`outputs/.gitkeep`](./outputs/.gitkeep)
+- [`outputs/summary.md`](./outputs/summary.md)
+- [`outputs/recommend.json`](./outputs/recommend.json)
+- [`outputs/generate.json`](./outputs/generate.json)
 
 ## Initial Skill Chain
 

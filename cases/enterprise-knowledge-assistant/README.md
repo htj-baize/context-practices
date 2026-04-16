@@ -19,17 +19,17 @@ The case models a common business problem:
 
 ## Directory Layout
 
-- [`docs/problem-statement.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/docs/problem-statement.md)
-- [`docs/workflow.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/docs/workflow.md)
-- [`docs/execution.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/docs/execution.md)
-- [`scripts/run-demo`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/scripts/run-demo)
-- [`fixtures/customer-context.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/fixtures/customer-context.json)
-- [`fixtures/proposal-target.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/fixtures/proposal-target.json)
-- [`fixtures/proposal-target.missing-inputs.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/fixtures/proposal-target.missing-inputs.json)
-- [`outputs/.gitkeep`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/outputs/.gitkeep)
-- [`outputs/summary.md`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/outputs/summary.md)
-- [`outputs/blocked.route.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/outputs/blocked.route.json)
-- [`outputs/ready.request.json`](/Users/joany/Desktop/baize/one-river/context-practices/cases/enterprise-knowledge-assistant/outputs/ready.request.json)
+- [`docs/problem-statement.md`](./docs/problem-statement.md)
+- [`docs/workflow.md`](./docs/workflow.md)
+- [`docs/execution.md`](./docs/execution.md)
+- [`scripts/run-demo`](./scripts/run-demo)
+- [`fixtures/customer-context.json`](./fixtures/customer-context.json)
+- [`fixtures/proposal-target.json`](./fixtures/proposal-target.json)
+- [`fixtures/proposal-target.missing-inputs.json`](./fixtures/proposal-target.missing-inputs.json)
+- [`outputs/.gitkeep`](./outputs/.gitkeep)
+- [`outputs/summary.md`](./outputs/summary.md)
+- [`outputs/blocked.route.json`](./outputs/blocked.route.json)
+- [`outputs/ready.request.json`](./outputs/ready.request.json)
 
 ## Initial Skill Chain
 
