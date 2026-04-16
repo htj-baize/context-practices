@@ -56,6 +56,17 @@ Bootstrap now supports two clone modes:
    - keep using the configured repository URL as-is
    - default repository URLs remain SSH-based
 
+## Shared env conventions
+
+Repository-level integration settings now live in:
+
+- `./context-practices/.env.local`
+
+This includes both:
+
+- context-family bootstrap variables such as `CONTEXT_GITHUB_TOKEN`
+- Neta case variables such as `NETA_TOKEN`, `NETA_API_BASE_URL`, `NETA_AUTH_API_BASE_URL`, and `NETA_REPO_REF`
+
 ## What this solves
 
 This makes the repository operationally self-contained:

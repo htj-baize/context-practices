@@ -10,7 +10,6 @@ SECONDARY_BIN="${REPO_DIR}/node_modules/.bin/neta-cli"
 FALLBACK_BIN="${REPO_DIR}/node_modules/.bin/skills-ref"
 LOCAL_CONFIG_DIR="${CASE_DIR}/.local/config"
 ROOT_ENV_FILE="${ROOT_DIR}/context-practices/.env.local"
-ENV_FILE="${CASE_DIR}/.env.local"
 
 if [[ ! -d "${REPO_DIR}" ]]; then
   echo "Vendored Neta repo is not installed." >&2
@@ -36,13 +35,6 @@ if [[ -f "${ROOT_ENV_FILE}" ]]; then
   set -a
   # shellcheck disable=SC1090
   source "${ROOT_ENV_FILE}"
-  set +a
-fi
-
-if [[ -f "${ENV_FILE}" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
   set +a
 fi
 

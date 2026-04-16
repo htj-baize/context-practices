@@ -63,7 +63,7 @@ Default mode is rule rerank:
 - intent labels
 - interaction / community continuity
 
-Optional second-stage mode can be enabled with LLM config in `.env.local`:
+Optional second-stage mode can be enabled with LLM config in `context-practices/.env.local`:
 
 - rule rerank first narrows and scores candidates
 - LLM rerank chooses only from the provided candidate set

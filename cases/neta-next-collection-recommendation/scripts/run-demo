@@ -8,7 +8,6 @@ OUTPUT_DIR="${CASE_DIR}/outputs"
 INPUT_DIR="${CASE_DIR}/inputs"
 NETA_BIN="${CASE_DIR}/scripts/neta-local"
 ROOT_ENV_FILE="${ROOT_DIR}/context-practices/.env.local"
-ENV_FILE="${CASE_DIR}/.env.local"
 CURRENT_COLLECTION_UUID=""
 CURRENT_SOURCE=""
 
@@ -16,13 +15,6 @@ if [[ -f "${ROOT_ENV_FILE}" ]]; then
   set -a
   # shellcheck disable=SC1090
   source "${ROOT_ENV_FILE}"
-  set +a
-fi
-
-if [[ -f "${ENV_FILE}" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
   set +a
 fi
 

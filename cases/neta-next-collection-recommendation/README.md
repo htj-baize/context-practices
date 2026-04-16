@@ -17,7 +17,6 @@ It is the first case in `context-practices` that is designed around a real exter
 - [`docs/problem-statement.md`](./docs/problem-statement.md)
 - [`docs/workflow.md`](./docs/workflow.md)
 - [`docs/execution.md`](./docs/execution.md)
-- [`.env.example`](./.env.example)
 - [`.gitignore`](./.gitignore)
 - [`scripts/run-demo`](./scripts/run-demo)
 - [`scripts/neta-local`](./scripts/neta-local)
@@ -92,13 +91,17 @@ This is intentionally pragmatic:
 
 ## Local Env
 
-The case-local scripts automatically read:
+The case scripts read the shared workspace env file:
 
-- `cases/neta-next-collection-recommendation/.env.local`
+- `context-practices/.env.local`
 
-Use [` .env.example `](./.env.example) as the template. The most important value is:
+Use [`context-practices/.env.example`](../../.env.example) as the template. The most important value is:
 
 - `NETA_TOKEN`
+
+Optional for the local GitHub bootstrap path:
+
+- `NETA_REPO_REF`
 
 ## Current Result
 
