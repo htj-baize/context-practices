@@ -54,6 +54,8 @@ If `NETA_REPO_URL` is set in `context-practices/.env.local`, the local bootstrap
 
 If `NETA_REPO_REF` is set in `context-practices/.env.local`, the local bootstrap script will checkout that exact branch/tag/commit after clone or fetch.
 
+The local bootstrap script now installs the vendored repo with `npm install --include=dev`, so it still gets build-time dependencies even if the parent shell exports `NODE_ENV=production`.
+
 The case-local scripts do not depend on a hard-coded machine path for Node. They resolve `node` and `npm` from:
 
 - `NODE_BIN` / `NPM_BIN` when explicitly provided

@@ -79,7 +79,10 @@ fi
 
 echo
 echo "Installing vendored repo dependencies"
-"${NPM_BIN}" install --prefix "${REPO_DIR}"
+# Force devDependencies for the vendored source checkout even when the parent
+# shell exports NODE_ENV=production. The local build currently depends on
+# toolchain packages such as husky/rimraf during bootstrap.
+"${NPM_BIN}" install --include=dev --prefix "${REPO_DIR}"
 
 echo "Building vendored repo CLI"
 "${NPM_BIN}" run build --prefix "${REPO_DIR}"
