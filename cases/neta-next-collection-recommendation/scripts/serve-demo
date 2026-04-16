@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HOST="${1:-127.0.0.1}"
+PORT="${2:-4187}"
+
+cd "${CASE_DIR}"
+echo "Serving demo at http://${HOST}:${PORT}/demo/"
+python3 -m http.server "${PORT}" --bind "${HOST}"

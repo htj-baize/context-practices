@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neta Recommendation Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">Context-Driven Recommendation Demo</div>
+          <h1>点赞后继续推荐</h1>
+          <p id="hero-summary">
+            正在加载推荐数据。
+          </p>
+        </div>
+        <div class="hero-stats" id="hero-stats"></div>
+      </header>
+
+      <main class="layout">
+        <section class="panel current-panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">当前种子</div>
+              <h2>Current Focus</h2>
+            </div>
+            <button class="ghost-button" id="reset-button" type="button">重置</button>
+          </div>
+          <div id="current-card"></div>
+        </section>
+
+        <section class="panel signal-panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">用户信号</div>
+              <h2>Preference State</h2>
+            </div>
+          </div>
+          <div class="signal-columns">
+            <div>
+              <h3>已点赞</h3>
+              <div id="liked-list" class="mini-list"></div>
+            </div>
+            <div>
+              <h3>偏好标签</h3>
+              <div id="signal-cloud" class="chip-cloud"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel queue-panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">推荐队列</div>
+              <h2>Next Recommendations</h2>
+            </div>
+            <div class="queue-caption">默认展开，点击卡片即可点赞或跳过。</div>
+          </div>
+          <div id="recommendation-list" class="recommendation-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="card-template">
+      <article class="card">
+        <div class="card-media"></div>
+        <div class="card-body">
+          <div class="card-topline">
+            <span class="rank-pill"></span>
+            <span class="score-pill"></span>
+          </div>
+          <h3 class="card-title"></h3>
+          <p class="card-reason"></p>
+          <div class="chip-row card-chips"></div>
+          <div class="meta-row"></div>
+          <div class="action-row">
+            <a class="link-button open-link" target="_blank" rel="noreferrer">打开</a>
+            <button class="secondary-button skip-button" type="button">跳过</button>
+            <button class="primary-button like-button" type="button">点赞并继续</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
