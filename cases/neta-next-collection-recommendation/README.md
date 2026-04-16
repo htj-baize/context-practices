@@ -101,6 +101,7 @@ Use [`context-practices/.env.example`](../../.env.example) as the template. The 
 
 Optional for the local GitHub bootstrap path:
 
+- `NETA_REPO_URL`
 - `NETA_REPO_REF`
 
 ## Current Result

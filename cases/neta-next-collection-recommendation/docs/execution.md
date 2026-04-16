@@ -17,6 +17,7 @@ Optional but recommended:
 
 - `NETA_API_BASE_URL`
 - `NETA_AUTH_API_BASE_URL`
+- `NETA_REPO_URL`
 - `NETA_REPO_REF`
 
 This case can use the shared workspace bootstrap path:
@@ -48,6 +49,8 @@ and installs into:
 - `context-practices/cases/neta-next-collection-recommendation/.local/vendor/neta-skills`
 
 This path vendors the GitHub repo itself and runs `npm install` inside it. Use this mode when you want to modify the local Neta codebase for new API surfaces such as readable likes or favorites.
+
+If `NETA_REPO_URL` is set in `context-practices/.env.local`, the local bootstrap script will clone from that repository instead of the default `htj-baize/neta-skills` URL.
 
 If `NETA_REPO_REF` is set in `context-practices/.env.local`, the local bootstrap script will checkout that exact branch/tag/commit after clone or fetch.
 

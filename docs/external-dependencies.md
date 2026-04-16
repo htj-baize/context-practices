@@ -65,7 +65,7 @@ Repository-level integration settings now live in:
 This includes both:
 
 - context-family bootstrap variables such as `CONTEXT_GITHUB_TOKEN`
-- Neta case variables such as `NETA_TOKEN`, `NETA_API_BASE_URL`, `NETA_AUTH_API_BASE_URL`, and `NETA_REPO_REF`
+- Neta case variables such as `NETA_TOKEN`, `NETA_API_BASE_URL`, `NETA_AUTH_API_BASE_URL`, `NETA_REPO_URL`, and `NETA_REPO_REF`
 
 ## What this solves
 
