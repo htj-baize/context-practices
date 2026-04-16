@@ -5,6 +5,7 @@
 Run from the repository root:
 
 ```bash
+./context-practices/scripts/bootstrap-external-cases
 ./context-practices/cases/narrative-world-demo/scripts/run-demo
 ```
 

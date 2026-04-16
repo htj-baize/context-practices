@@ -15,51 +15,68 @@
           <p id="hero-summary">
             正在加载推荐数据。
           </p>
+          <div class="hero-flow" id="hero-flow"></div>
         </div>
         <div class="hero-stats" id="hero-stats"></div>
       </header>
 
       <main class="layout">
-        <section class="panel current-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">当前种子</div>
-              <h2>Current Focus</h2>
+        <section class="focus-column">
+          <section class="panel focus-tabs-panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-kicker">主视图</div>
+                <h2>Focus Views</h2>
+              </div>
+              <button class="ghost-button" id="reset-button" type="button">重置</button>
             </div>
-            <button class="ghost-button" id="reset-button" type="button">重置</button>
-          </div>
-          <div id="current-card"></div>
+            <div class="focus-tabs" id="focus-tabs">
+              <button class="focus-tab is-active" data-tab="current" type="button">当前种子</button>
+              <button class="focus-tab" data-tab="next" type="button">下一个</button>
+              <button class="focus-tab" data-tab="queue" type="button">推荐列表</button>
+            </div>
+
+            <div class="focus-view is-active" data-view="current">
+              <div id="current-card"></div>
+            </div>
+
+            <div class="focus-view" data-view="next">
+              <div class="panel-subcopy">优先展示当前最值得推给用户的下一条作品。</div>
+              <div id="next-card"></div>
+            </div>
+
+            <div class="focus-view" data-view="queue">
+              <div class="queue-caption">默认展开，点击卡片即可点赞或跳过。</div>
+              <div class="mobile-deck-controls" id="mobile-deck-controls">
+                <button class="ghost-button deck-nav-button" id="deck-prev" type="button">上一张</button>
+                <div class="deck-status" id="deck-status">1 / 1</div>
+                <button class="ghost-button deck-nav-button" id="deck-next" type="button">下一张</button>
+              </div>
+              <div id="recommendation-list" class="recommendation-list"></div>
+            </div>
+          </section>
         </section>
 
-        <section class="panel signal-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">用户信号</div>
-              <h2>Preference State</h2>
+        <aside class="signal-column">
+          <section class="panel signal-panel">
+            <div class="panel-head panel-head-tight">
+              <div>
+                <div class="panel-kicker">用户信号</div>
+                <h2>Preference State</h2>
+              </div>
             </div>
-          </div>
-          <div class="signal-columns">
-            <div>
-              <h3>已点赞</h3>
-              <div id="liked-list" class="mini-list"></div>
+            <div class="signal-stack">
+              <div class="signal-block">
+                <h3>已点赞</h3>
+                <div id="liked-list" class="mini-list"></div>
+              </div>
+              <div class="signal-block">
+                <h3>偏好标签</h3>
+                <div id="signal-cloud" class="chip-cloud"></div>
+              </div>
             </div>
-            <div>
-              <h3>偏好标签</h3>
-              <div id="signal-cloud" class="chip-cloud"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel queue-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">推荐队列</div>
-              <h2>Next Recommendations</h2>
-            </div>
-            <div class="queue-caption">默认展开，点击卡片即可点赞或跳过。</div>
-          </div>
-          <div id="recommendation-list" class="recommendation-list"></div>
-        </section>
+          </section>
+        </aside>
       </main>
     </div>
 
@@ -70,19 +87,43 @@
           <div class="card-topline">
             <span class="rank-pill"></span>
             <span class="score-pill"></span>
+            <span class="route-pill"></span>
           </div>
           <h3 class="card-title"></h3>
-          <p class="card-reason"></p>
           <div class="chip-row card-chips"></div>
           <div class="meta-row"></div>
           <div class="action-row">
             <a class="link-button open-link" target="_blank" rel="noreferrer">打开</a>
+            <button class="secondary-button detail-button" type="button">查看理由</button>
             <button class="secondary-button skip-button" type="button">跳过</button>
             <button class="primary-button like-button" type="button">点赞并继续</button>
           </div>
         </div>
       </article>
     </template>
+
+    <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+    <section class="bottom-sheet" id="bottom-sheet" aria-hidden="true">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div>
+          <div class="panel-kicker">推荐理由</div>
+          <h2 id="sheet-title">Reason</h2>
+        </div>
+        <button class="ghost-button sheet-close" id="sheet-close" type="button">关闭</button>
+      </div>
+      <div class="sheet-body">
+        <p class="sheet-summary" id="sheet-summary"></p>
+        <div class="sheet-section">
+          <div class="sheet-label">概念/意图</div>
+          <div class="chip-row" id="sheet-chips"></div>
+        </div>
+        <div class="sheet-section">
+          <div class="sheet-label">证据</div>
+          <div class="sheet-list" id="sheet-list"></div>
+        </div>
+      </div>
+    </section>
 
     <script type="module" src="./app.js"></script>
   </body>

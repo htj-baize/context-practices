@@ -4,12 +4,12 @@ set -euo pipefail
 
 CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
-CGP_BIN="${ROOT_DIR}/context-gameplay/.venv/bin/cgp"
+CGP_BIN="${ROOT_DIR}/context-practices/scripts/cgp"
 OUTPUT_DIR="${CASE_DIR}/outputs"
 
 if [[ ! -x "${CGP_BIN}" ]]; then
   echo "ContextGameplay CLI is not available at ${CGP_BIN}" >&2
-  echo "Bootstrap context-gameplay first." >&2
+  echo "Run ./context-practices/scripts/bootstrap-external-cases first." >&2
   exit 1
 fi
 

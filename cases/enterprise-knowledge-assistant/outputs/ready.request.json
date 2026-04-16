@@ -3,7 +3,7 @@
   "result": {
     "request": {
       "request_kind": "operation_request",
-      "operation_id": "op_3bfc34006e8c",
+      "operation_id": "op_6e8b4dca41d5",
       "operation_kind": "apply",
       "context_id": "ctx_enterprise_customer_001",
       "target_id": "tgt_enterprise_proposal_ready_001",

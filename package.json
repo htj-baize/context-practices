@@ -1,0 +1,14 @@
+{
+  "name": "context-practices",
+  "private": true,
+  "packageManager": "pnpm@8.6.10",
+  "scripts": {
+    "dev": "pnpm --filter @context-practices/practices-web dev",
+    "build": "pnpm --filter @context-practices/practices-web build",
+    "start": "pnpm --filter @context-practices/practices-web start",
+    "lint": "pnpm --filter @context-practices/practices-web lint",
+    "typecheck": "pnpm --filter @context-practices/practices-web typecheck",
+    "check": "pnpm lint && pnpm typecheck"
+  }
+}
+

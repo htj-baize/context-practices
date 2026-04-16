@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+EXTERNAL_DIR="${ROOT_DIR}/.external"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+
+DEFAULT_CONTEXT_WEAVE_REPO="${CONTEXT_WEAVE_REPO:-git@github.com:htj-baize/context-weave.git}"
+DEFAULT_CONTEXT_SKILLS_REPO="${CONTEXT_SKILLS_REPO:-git@github.com:htj-baize/context-skills.git}"
+DEFAULT_CONTEXT_GAMEPLAY_REPO="${CONTEXT_GAMEPLAY_REPO:-git@github.com:htj-baize/context-gameplay.git}"
+
+ensure_python() {
+  if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+    echo "Python runtime not found: ${PYTHON_BIN}" >&2
+    exit 1
+  fi
+}
+
+clone_or_use_repo() {
+  local name="$1"
+  local sibling_path="$2"
+  local repo_url="$3"
+  local managed_path="${EXTERNAL_DIR}/${name}"
+
+  if [[ -d "${sibling_path}" ]]; then
+    echo "${sibling_path}"
+    return 0
+  fi
+
+  if [[ ! -d "${managed_path}" ]]; then
+    mkdir -p "${EXTERNAL_DIR}"
+    echo "Cloning ${name} into ${managed_path}" >&2
+    git clone "${repo_url}" "${managed_path}" >&2
+  fi
+
+  echo "${managed_path}"
+}
+
+ensure_venv() {
+  local repo_path="$1"
+  local venv_python="${repo_path}/.venv/bin/python"
+
+  if [[ ! -x "${venv_python}" ]]; then
+    echo "Creating venv for ${repo_path}" >&2
+    "${PYTHON_BIN}" -m venv "${repo_path}/.venv"
+  fi
+
+  "${venv_python}" -m pip install --upgrade pip setuptools wheel >/dev/null
+  "${venv_python}" -m pip install -e "${repo_path}" >/dev/null
+}
+
+bootstrap_repo() {
+  local name="$1"
+  local sibling_path="$2"
+  local repo_url="$3"
+
+  local repo_path
+  repo_path="$(clone_or_use_repo "${name}" "${sibling_path}" "${repo_url}")"
+  ensure_venv "${repo_path}"
+  echo "${name}: ${repo_path}" >&2
+}
+
+ensure_python
+
+bootstrap_repo "context-weave" "${ROOT_DIR}/../context-weave" "${DEFAULT_CONTEXT_WEAVE_REPO}"
+bootstrap_repo "context-skills" "${ROOT_DIR}/../context-skills" "${DEFAULT_CONTEXT_SKILLS_REPO}"
+bootstrap_repo "context-gameplay" "${ROOT_DIR}/../context-gameplay" "${DEFAULT_CONTEXT_GAMEPLAY_REPO}"
+
+echo "External case dependencies are ready." >&2
+

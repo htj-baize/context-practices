@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+EXTERNAL_DIR="${ROOT_DIR}/.external"
+
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 <cw|cs|cgp>" >&2
+  exit 1
+fi
+
+tool="$1"
+
+case "${tool}" in
+  cw)
+    env_var="CW_BIN"
+    managed_repo="${EXTERNAL_DIR}/context-weave"
+    sibling_repo="${ROOT_DIR}/../context-weave"
+    sibling_paths=(
+      "${sibling_repo}/scripts/cw"
+      "${sibling_repo}/.venv/bin/cw"
+    )
+    managed_paths=(
+      "${managed_repo}/scripts/cw"
+      "${managed_repo}/.venv/bin/cw"
+    )
+    ;;
+  cs)
+    env_var="CS_BIN"
+    managed_repo="${EXTERNAL_DIR}/context-skills"
+    sibling_repo="${ROOT_DIR}/../context-skills"
+    sibling_paths=(
+      "${sibling_repo}/.venv/bin/cs"
+    )
+    managed_paths=(
+      "${managed_repo}/.venv/bin/cs"
+    )
+    ;;
+  cgp)
+    env_var="CGP_BIN"
+    managed_repo="${EXTERNAL_DIR}/context-gameplay"
+    sibling_repo="${ROOT_DIR}/../context-gameplay"
+    sibling_paths=(
+      "${sibling_repo}/.venv/bin/cgp"
+    )
+    managed_paths=(
+      "${managed_repo}/.venv/bin/cgp"
+    )
+    ;;
+  *)
+    echo "unknown tool: ${tool}" >&2
+    exit 1
+    ;;
+esac
+
+env_value="${!env_var:-}"
+if [[ -n "${env_value}" && -x "${env_value}" ]]; then
+  echo "${env_value}"
+  exit 0
+fi
+
+for candidate in "${sibling_paths[@]}"; do
+  if [[ -x "${candidate}" ]]; then
+    echo "${candidate}"
+    exit 0
+  fi
+done
+
+for candidate in "${managed_paths[@]}"; do
+  if [[ -x "${candidate}" ]]; then
+    echo "${candidate}"
+    exit 0
+  fi
+done
+
+if command -v "${tool}" >/dev/null 2>&1; then
+  command -v "${tool}"
+  exit 0
+fi
+
+echo "Unable to resolve ${tool}." >&2
+echo "Run: ${ROOT_DIR}/scripts/bootstrap-external-cases" >&2
+exit 1
+

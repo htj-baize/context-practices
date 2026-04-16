@@ -21,16 +21,33 @@ const state = {
   dismissedIds: new Set(),
   history: [],
   recommendationSeedId: "",
+  mobileDeckIndex: 0,
+  activeTab: "current",
 };
 
 const dom = {
   heroSummary: document.getElementById("hero-summary"),
+  heroFlow: document.getElementById("hero-flow"),
   heroStats: document.getElementById("hero-stats"),
   currentCard: document.getElementById("current-card"),
+  nextCard: document.getElementById("next-card"),
   likedList: document.getElementById("liked-list"),
   signalCloud: document.getElementById("signal-cloud"),
   recommendationList: document.getElementById("recommendation-list"),
+  focusTabs: [...document.querySelectorAll(".focus-tab")],
+  focusViews: [...document.querySelectorAll(".focus-view")],
+  deckControls: document.getElementById("mobile-deck-controls"),
+  deckPrev: document.getElementById("deck-prev"),
+  deckNext: document.getElementById("deck-next"),
+  deckStatus: document.getElementById("deck-status"),
   resetButton: document.getElementById("reset-button"),
+  sheetBackdrop: document.getElementById("sheet-backdrop"),
+  bottomSheet: document.getElementById("bottom-sheet"),
+  sheetClose: document.getElementById("sheet-close"),
+  sheetTitle: document.getElementById("sheet-title"),
+  sheetSummary: document.getElementById("sheet-summary"),
+  sheetChips: document.getElementById("sheet-chips"),
+  sheetList: document.getElementById("sheet-list"),
   template: document.getElementById("card-template"),
 };
 
@@ -190,6 +207,30 @@ function renderHero(queue) {
       `,
     )
     .join("");
+
+  const flowParts = [];
+  if (current) {
+    flowParts.push(`<span class="flow-pill">当前：${escapeHtml(current.title)}</span>`);
+  }
+  if (queue[0]) {
+    flowParts.push(`<span class="flow-arrow">→</span>`);
+    flowParts.push(`<span class="flow-pill">下一条：${escapeHtml(queue[0].candidate.title)}</span>`);
+  }
+  if (state.likedIds.size) {
+    flowParts.push(`<span class="flow-arrow">→</span>`);
+    flowParts.push(`<span class="flow-pill">已沉淀 ${state.likedIds.size} 个偏好信号</span>`);
+  }
+  dom.heroFlow.innerHTML = flowParts.join("");
+}
+
+function setActiveTab(tabId) {
+  state.activeTab = tabId;
+  for (const tab of dom.focusTabs) {
+    tab.classList.toggle("is-active", tab.dataset.tab === tabId);
+  }
+  for (const view of dom.focusViews) {
+    view.classList.toggle("is-active", view.dataset.view === tabId);
+  }
 }
 
 function createChips(values, accent = false) {
@@ -197,6 +238,77 @@ function createChips(values, accent = false) {
     .slice(0, 6)
     .map((value) => `<span class="chip ${accent ? "chip-accent" : ""}">${escapeHtml(value)}</span>`)
     .join("");
+}
+
+function openSheet({ title, summary, chips = [], items = [] }) {
+  dom.sheetTitle.textContent = title || "Reason";
+  dom.sheetSummary.textContent = summary || "";
+  dom.sheetChips.innerHTML = createChips(chips, true) || `<span class="chip">no signal</span>`;
+  dom.sheetList.innerHTML = items
+    .filter(Boolean)
+    .map((item) => `<div class="sheet-item">${escapeHtml(item)}</div>`)
+    .join("");
+  dom.sheetBackdrop.hidden = false;
+  dom.bottomSheet.classList.add("is-open");
+  dom.bottomSheet.setAttribute("aria-hidden", "false");
+}
+
+function closeSheet() {
+  dom.sheetBackdrop.hidden = true;
+  dom.bottomSheet.classList.remove("is-open");
+  dom.bottomSheet.setAttribute("aria-hidden", "true");
+}
+
+function createCardNode(entry, index, mode = "queue") {
+  const fragment = dom.template.content.firstElementChild.cloneNode(true);
+  const { candidate } = entry;
+  fragment.classList.add("is-deck-card");
+  const media = fragment.querySelector(".card-media");
+  media.innerHTML = candidate.cover_url
+    ? `<img src="${escapeHtml(candidate.cover_url)}" alt="${escapeHtml(candidate.title)}" />`
+    : "";
+  fragment.querySelector(".rank-pill").textContent = mode === "next" ? "Next" : `#${index + 1}`;
+  fragment.querySelector(".score-pill").textContent = `${entry.score} pts`;
+  fragment.querySelector(".route-pill").textContent =
+    (candidate.source_feed_item?.recall_sources || []).slice(0, 2).join(" / ") || "recall";
+  fragment.querySelector(".card-title").textContent = candidate.title;
+  fragment.querySelector(".card-chips").innerHTML =
+    createChips(entry.evidence.conceptOverlap, true) +
+    createChips(entry.evidence.intentOverlap) +
+    createChips(entry.evidence.themeOverlap);
+  fragment.querySelector(".meta-row").innerHTML = [
+    candidate.content_tags?.length
+      ? `<span class="meta-chip">标签 ${escapeHtml(candidate.content_tags.slice(0, 2).join(" / "))}</span>`
+      : "",
+    candidate.interaction_flags?.length
+      ? `<span class="meta-chip">互动 ${escapeHtml(candidate.interaction_flags.join(" / "))}</span>`
+      : "",
+    candidate.community_tags?.length
+      ? `<span class="meta-chip">社区 ${escapeHtml(candidate.community_tags.slice(0, 2).join(" / "))}</span>`
+      : "",
+    candidate.source_feed_item?.recall_sources?.length
+      ? `<span class="meta-chip">召回 ${escapeHtml(candidate.source_feed_item.recall_sources.join(" / "))}</span>`
+      : "",
+  ].join("");
+  fragment.querySelector(".open-link").href = candidate.collection_link;
+  fragment.querySelector(".detail-button").addEventListener("click", () =>
+    openSheet({
+      title: candidate.title,
+      summary: entry.reason,
+      chips: [...(entry.evidence.conceptOverlap || []), ...(entry.evidence.intentOverlap || []), ...(entry.evidence.themeOverlap || [])],
+      items: [
+        `概念连续：${(entry.evidence.conceptOverlap || []).join(" / ") || "none"}`,
+        `玩法意图：${(entry.evidence.intentOverlap || []).join(" / ") || "none"}`,
+        `主题重合：${(entry.evidence.themeOverlap || []).join(" / ") || "none"}`,
+        `标签重合：${(entry.evidence.tagOverlap || []).join(" / ") || "none"}`,
+        `互动形态：${(entry.evidence.interactionOverlap || []).join(" / ") || "none"}`,
+        `社区连续：${(entry.evidence.communityOverlap || []).join(" / ") || "none"}`,
+      ],
+    }),
+  );
+  fragment.querySelector(".like-button").addEventListener("click", () => handleLike(candidate.uuid));
+  fragment.querySelector(".skip-button").addEventListener("click", () => handleSkip(candidate.uuid));
+  return fragment;
 }
 
 function renderCurrentCard(queue) {
@@ -215,10 +327,9 @@ function renderCurrentCard(queue) {
     : "";
   fragment.querySelector(".rank-pill").textContent = "Current";
   fragment.querySelector(".score-pill").textContent = topCandidate ? `Next ${topCandidate.score}` : "No Queue";
+  fragment.querySelector(".route-pill").textContent =
+    (current.source_feed_item?.recall_sources || []).slice(0, 2).join(" / ") || "seed";
   fragment.querySelector(".card-title").textContent = current.title;
-  fragment.querySelector(".card-reason").textContent =
-    topCandidate?.reason ||
-    "当前没有更适合的候选，等待更多用户信号或者重置队列。";
   fragment.querySelector(".card-chips").innerHTML =
     createChips(current.concept_labels, true) +
     createChips(current.intent_labels) +
@@ -230,12 +341,33 @@ function renderCurrentCard(queue) {
   `;
   const openLink = fragment.querySelector(".open-link");
   openLink.href = current.collection_link;
+  fragment.querySelector(".detail-button").addEventListener("click", () =>
+    openSheet({
+      title: current.title,
+      summary: topCandidate?.reason || "当前没有更适合的候选，等待更多用户信号或者重置队列。",
+      chips: [...(current.concept_labels || []), ...(current.intent_labels || []), ...(current.theme_labels || [])],
+      items: [
+        `互动形态：${(current.interaction_flags || []).join(" / ") || "none"}`,
+        `内容标签：${(current.content_tags || []).slice(0, 4).join(" / ") || "none"}`,
+        `社区标签：${(current.community_tags || []).slice(0, 4).join(" / ") || "none"}`,
+      ],
+    }),
+  );
   const likeButton = fragment.querySelector(".like-button");
   likeButton.textContent = "点赞当前并继续";
   likeButton.addEventListener("click", () => handleLike(current.uuid));
   fragment.querySelector(".skip-button").textContent = "跳过当前";
   fragment.querySelector(".skip-button").addEventListener("click", () => handleSkip(current.uuid));
   dom.currentCard.replaceChildren(fragment);
+}
+
+function renderNextCard(queue) {
+  const nextEntry = queue[0];
+  if (!nextEntry) {
+    dom.nextCard.innerHTML = `<div class="empty-state">当前没有可推荐的下一条作品。</div>`;
+    return;
+  }
+  dom.nextCard.replaceChildren(createCardNode(nextEntry, 0, "next"));
 }
 
 function renderSignalState() {
@@ -263,43 +395,37 @@ function renderSignalState() {
 
 function renderQueue(queue) {
   if (!queue.length) {
+    dom.deckStatus.textContent = "0 / 0";
     dom.recommendationList.innerHTML = `<div class="empty-state">候选已经用尽，点击重置重新开始。</div>`;
     return;
   }
 
+  if (state.mobileDeckIndex >= queue.length) {
+    state.mobileDeckIndex = 0;
+  }
+
   const nodes = queue.map((entry, index) => {
-    const fragment = dom.template.content.firstElementChild.cloneNode(true);
-    const { candidate } = entry;
-    const media = fragment.querySelector(".card-media");
-    media.innerHTML = candidate.cover_url
-      ? `<img src="${escapeHtml(candidate.cover_url)}" alt="${escapeHtml(candidate.title)}" />`
-      : "";
-    fragment.querySelector(".rank-pill").textContent = `#${index + 1}`;
-    fragment.querySelector(".score-pill").textContent = `${entry.score} pts`;
-    fragment.querySelector(".card-title").textContent = candidate.title;
-    fragment.querySelector(".card-reason").textContent = entry.reason;
-    fragment.querySelector(".card-chips").innerHTML =
-      createChips(entry.evidence.conceptOverlap, true) +
-      createChips(entry.evidence.intentOverlap) +
-      createChips(entry.evidence.themeOverlap);
-    fragment.querySelector(".meta-row").innerHTML = [
-      candidate.interaction_flags?.length
-        ? `<span class="meta-chip">互动 ${escapeHtml(candidate.interaction_flags.join(" / "))}</span>`
-        : "",
-      candidate.community_tags?.length
-        ? `<span class="meta-chip">社区 ${escapeHtml(candidate.community_tags.slice(0, 2).join(" / "))}</span>`
-        : "",
-      candidate.source_feed_item?.recall_sources?.length
-        ? `<span class="meta-chip">召回 ${escapeHtml(candidate.source_feed_item.recall_sources.join(" / "))}</span>`
-        : "",
-    ].join("");
-    const openLink = fragment.querySelector(".open-link");
-    openLink.href = candidate.collection_link;
-    fragment.querySelector(".like-button").addEventListener("click", () => handleLike(candidate.uuid));
-    fragment.querySelector(".skip-button").addEventListener("click", () => handleSkip(candidate.uuid));
+    const fragment = createCardNode(entry, index, "queue");
+    const mobileOffset = index - state.mobileDeckIndex;
+    if (mobileOffset === 0) {
+      fragment.dataset.deckLayer = "0";
+    } else if (mobileOffset === 1) {
+      fragment.dataset.deckLayer = "1";
+      fragment.classList.add("is-deck-back");
+    } else if (mobileOffset === 2) {
+      fragment.dataset.deckLayer = "2";
+      fragment.classList.add("is-deck-back");
+    } else {
+      fragment.dataset.deckLayer = "hidden";
+      fragment.classList.add("is-deck-back");
+    }
+
     return fragment;
   });
 
+  dom.deckStatus.textContent = `${Math.min(state.mobileDeckIndex + 1, queue.length)} / ${queue.length}`;
+  dom.deckPrev.disabled = state.mobileDeckIndex <= 0;
+  dom.deckNext.disabled = state.mobileDeckIndex >= queue.length - 1;
   dom.recommendationList.replaceChildren(...nodes);
 }
 
@@ -307,11 +433,15 @@ function handleLike(id) {
   state.likedIds.add(id);
   state.history.push(id);
   state.currentId = id;
+  state.mobileDeckIndex = 0;
   render();
 }
 
 function handleSkip(id) {
   state.dismissedIds.add(id);
+  if (state.mobileDeckIndex > 0) {
+    state.mobileDeckIndex -= 1;
+  }
   if (state.currentId === id) {
     const queue = buildQueue();
     state.currentId = queue[0]?.candidate.uuid || state.currentId;
@@ -324,13 +454,24 @@ function resetState() {
   state.dismissedIds.clear();
   state.history = [];
   state.currentId = state.seedCurrentId;
+  state.mobileDeckIndex = 0;
+  closeSheet();
+  render();
+}
+
+function shiftDeck(step) {
+  const queue = buildQueue();
+  if (!queue.length) return;
+  state.mobileDeckIndex = Math.max(0, Math.min(queue.length - 1, state.mobileDeckIndex + step));
   render();
 }
 
 function render() {
   const queue = buildQueue();
+  setActiveTab(state.activeTab);
   renderHero(queue);
   renderCurrentCard(queue);
+  renderNextCard(queue);
   renderSignalState();
   renderQueue(queue);
 }
@@ -356,6 +497,13 @@ async function loadData() {
 }
 
 dom.resetButton.addEventListener("click", resetState);
+dom.deckPrev.addEventListener("click", () => shiftDeck(-1));
+dom.deckNext.addEventListener("click", () => shiftDeck(1));
+for (const tab of dom.focusTabs) {
+  tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
+}
+dom.sheetClose.addEventListener("click", closeSheet);
+dom.sheetBackdrop.addEventListener("click", closeSheet);
 
 loadData().catch((error) => {
   console.error(error);

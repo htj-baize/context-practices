@@ -5,6 +5,7 @@
 Run the case from the repository root:
 
 ```bash
+./context-practices/scripts/bootstrap-external-cases
 ./context-practices/cases/enterprise-knowledge-assistant/scripts/run-demo
 ```
 

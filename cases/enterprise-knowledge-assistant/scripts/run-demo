@@ -4,13 +4,13 @@ set -euo pipefail
 
 CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
-CW_BIN="${ROOT_DIR}/context-weave/scripts/cw"
+CW_BIN="${ROOT_DIR}/context-practices/scripts/cw"
 OUTPUT_DIR="${CASE_DIR}/outputs"
 FIXTURE_DIR="${CASE_DIR}/fixtures"
 
 if [[ ! -x "${CW_BIN}" ]]; then
   echo "ContextWeave CLI is not available at ${CW_BIN}" >&2
-  echo "Bootstrap context-weave first." >&2
+  echo "Run ./context-practices/scripts/bootstrap-external-cases first." >&2
   exit 1
 fi
 
