@@ -34,6 +34,16 @@
   ],
   "theme_labels": [],
   "intent_labels": [],
+  "concept_labels": [
+    "personality_test",
+    "same_style_remix",
+    "persona_profile"
+  ],
+  "format_labels": [
+    "1824:2336",
+    "single_image",
+    "interactive"
+  ],
   "semantic_tokens": [
     "爱莉的",
     "sbti",
@@ -41,21 +51,17 @@
     "谁懂啊",
     "这个结果真的太贴人之律者了",
     "来看看你的结果和我一样吗",
-    "画面要求",
     "低多边形风格",
     "人格测试结果图",
     "布局为顶部标题",
     "人格测试",
-    "基于",
     "性格生成的低多边形风格",
-    "首先根据",
     "性格从",
     "标签库中选择匹配标签",
     "然后生成低多边形风格图片",
     "布局包含顶部标题",
     "中间标签名及英文",
     "中部",
-    "插画",
     "底部描述文案",
     "崩坏三",
     "爱莉希雅",
@@ -65,7 +71,9 @@
     "module_id": "seed_collection",
     "template_id": "SEED",
     "has_video": false,
-    "is_interactive": true
+    "is_interactive": true,
+    "recall_sources": [],
+    "recall_type": ""
   },
   "seed_list_item": {
     "id": 10479844,

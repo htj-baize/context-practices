@@ -5,69 +5,88 @@
   "current_collection_title": "爱莉的SBTI测试✨",
   "current_collection_cover_url": "https://oss.talesofai.cn/picture/c2d04bf6-f05d-48e5-b3ba-d9b45df90dfb.webp",
   "current_collection_link": "https://app.nieta.art/collection/interaction?uuid=12e5bf49-6bbf-4aa5-8338-d27600b01cec&entrance=community",
-  "recommended_collection_uuid": "935119ce-23ed-4e80-8e6c-7de8d451433c",
-  "recommended_collection_title": "【捏捏开荒团】OC心中的江南园林风光",
-  "recommended_collection_cover_url": "https://oss.talesofai.cn/sts/3d1ce6c2ac7348989e89e25f99220929/10e57101-fef1-493a-a626-6605a6a525c9.jpg",
-  "recommended_collection_link": "https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&entrance=community",
-  "recommendation_reason": "shared interaction flags: interactive",
+  "recommended_collection_uuid": "893e308d-33a4-46c4-8f30-133f8ef24434",
+  "recommended_collection_title": "【社团活动】🌟 【梦幻团·星座共鸣祭】",
+  "recommended_collection_cover_url": "https://oss.talesofai.cn/sts/3fc233c8b4bd46019c3292103cd46844/e56af7e9-664a-45d7-969d-57bc896aa5cf.jpg",
+  "recommended_collection_link": "https://app.nieta.art/collection/interaction?uuid=893e308d-33a4-46c4-8f30-133f8ef24434&entrance=community",
+  "recommendation_reason": "它最接近当前合集的“人格/属性归类+互动代入”玩法连续性，而不只是换皮画风复刻。",
   "explanation": {
     "summary": "Recommendation is reranked from the live Neta feed using the last-liked seed collection, collection detail, cta_info, content tags, theme labels, intent labels, and interaction flags.",
     "reason_lines": [
-      "shared interaction flags: interactive",
-      "shared semantic tokens: 基于",
-      "shared community context: 捏捏"
+      "它最接近当前合集的“人格/属性归类+互动代入”玩法连续性，而不只是换皮画风复刻。",
+      "当前合集核心是 SBTI 人格测试与 persona_profile，候选中它同样是互动式角色属性映射，和“测试/画像”思路最接近。",
+      "其他候选大多偏性转、换装、黑化或纯画风同款；它虽然是星座主题，但比单纯 same_style_remix 更保留“角色人格/类型化呈现”的连续性。"
     ]
   },
   "evidence": {
     "source": "neta_interactive_feed",
-    "selection_rule": "context_driven_rerank",
+    "selection_rule": "context_driven_rerank_plus_llm",
     "current_seed_mode": "liked_list",
-    "candidate_count": 5,
-    "top_candidate_score": 10,
-    "top_candidate_confidence": "low",
+    "candidate_count": 12,
+    "top_candidate_score": 18,
+    "top_candidate_confidence": "medium",
     "top_candidate_evidence": {
       "tag_overlap": [],
-      "semantic_overlap": [
-        "基于"
-      ],
+      "semantic_overlap": [],
       "interaction_overlap": [
         "interactive"
       ],
       "theme_overlap": [],
       "intent_overlap": [],
-      "community_overlap": [
-        "捏捏"
+      "concept_overlap": [
+        "persona_profile"
       ],
-      "continuity_only": true
+      "format_overlap": [
+        "interactive"
+      ],
+      "seed_character_overlap": [],
+      "recall_source_overlap": [
+        "interactive"
+      ],
+      "community_overlap": [],
+      "continuity_only": false
+    },
+    "llm_rerank": {
+      "recommended_uuid": "893e308d-33a4-46c4-8f30-133f8ef24434",
+      "confidence": "medium",
+      "reason_summary": "它最接近当前合集的“人格/属性归类+互动代入”玩法连续性，而不只是换皮画风复刻。",
+      "reason_lines": [
+        "当前合集核心是 SBTI 人格测试与 persona_profile，候选中它同样是互动式角色属性映射，和“测试/画像”思路最接近。",
+        "其他候选大多偏性转、换装、黑化或纯画风同款；它虽然是星座主题，但比单纯 same_style_remix 更保留“角色人格/类型化呈现”的连续性。"
+      ]
     }
   },
   "fallback_candidates": [
     {
-      "uuid": "38e764c9-0f5c-4ace-bc17-bc1c8234a8c8",
-      "title": "如果能见从前的自己✨",
-      "score": 7,
+      "uuid": "b8861a8e-31fb-45cc-a494-d54b9b0a9605",
+      "title": "本体和性转贴贴🤤",
+      "score": 15,
       "confidence": "low",
       "reason_lines": [
+        "shared concept labels: same_style_remix",
+        "shared format labels: interactive",
         "shared interaction flags: interactive",
+        "shared semantic tokens: 谁懂啊",
         "shared community context: 捏捏"
       ]
     },
     {
-      "uuid": "6c35b93c-7874-4735-aab7-5f2f09e1f2a1",
-      "title": "【捏捏开荒团】复活节了来个彩蛋罢",
-      "score": 7,
-      "confidence": "low",
+      "uuid": "5e7be635-616a-4363-a05e-6b0e1bcd9e1e",
+      "title": "天蝎♏烟消云散，泪依旧止不住地流",
+      "score": 14,
+      "confidence": "medium",
       "reason_lines": [
-        "shared interaction flags: interactive",
-        "shared community context: 捏捏"
+        "shared concept labels: persona_profile, same_style_remix"
       ]
     },
     {
-      "uuid": "ac3ee99f-7e54-4b2b-9687-3fde04471269",
-      "title": "菲洛斯换装这一块",
-      "score": 7,
+      "uuid": "58114d77-8825-486e-8241-6063cdec5514",
+      "title": "顶级吃瘪王",
+      "score": 13,
       "confidence": "low",
       "reason_lines": [
+        "shared concept labels: same_style_remix",
+        "shared format labels: interactive",
         "shared interaction flags: interactive",
         "shared community context: 捏捏"
       ]

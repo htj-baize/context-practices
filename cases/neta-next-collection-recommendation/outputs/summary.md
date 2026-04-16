@@ -3,7 +3,7 @@
 ## Feed
 
 - normalized candidate count:
-  - 5
+  - 12
 
 ## Current Collection
 
@@ -21,21 +21,21 @@
 ## Recommended Next Collection
 
 - uuid:
-  - 935119ce-23ed-4e80-8e6c-7de8d451433c
+  - 893e308d-33a4-46c4-8f30-133f8ef24434
 - title:
-  - 【捏捏开荒团】OC心中的江南园林风光
+  - 【社团活动】🌟 【梦幻团·星座共鸣祭】
 - link:
-  - https://app.nieta.art/collection/interaction?uuid=935119ce-23ed-4e80-8e6c-7de8d451433c&entrance=community
+  - https://app.nieta.art/collection/interaction?uuid=893e308d-33a4-46c4-8f30-133f8ef24434&entrance=community
 - score:
-  - 10
+  - 18
 - confidence:
-  - low
+  - medium
 - selection rule:
-  - context_driven_rerank
+  - context_driven_rerank_plus_llm
 - primary reason:
-  - shared interaction flags: interactive
+  - 它最接近当前合集的“人格/属性归类+互动代入”玩法连续性，而不只是换皮画风复刻。
 
 ## Reader Summary
 
 - summary:
-  - 当前内容《爱莉的SBTI测试✨》之后，推荐《【捏捏开荒团】OC心中的江南园林风光》。交互形态连续：interactive
+  - 当前内容《爱莉的SBTI测试✨》之后，推荐《【社团活动】🌟 【梦幻团·星座共鸣祭】》。交互形态连续：interactive

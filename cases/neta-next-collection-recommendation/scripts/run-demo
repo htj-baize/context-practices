@@ -7,8 +7,16 @@ ROOT_DIR="$(cd "${CASE_DIR}/../../.." && pwd)"
 OUTPUT_DIR="${CASE_DIR}/outputs"
 INPUT_DIR="${CASE_DIR}/inputs"
 NETA_BIN="${CASE_DIR}/scripts/neta-local"
+ENV_FILE="${CASE_DIR}/.env.local"
 CURRENT_COLLECTION_UUID=""
 CURRENT_SOURCE=""
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+  set +a
+fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -45,9 +53,12 @@ from __future__ import annotations
 import collections
 import html
 import json
+import os
 import re
 import subprocess
 import sys
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 output_dir = Path(sys.argv[1])
@@ -55,7 +66,7 @@ neta_bin = Path(sys.argv[2])
 input_dir = Path(sys.argv[3])
 requested_current_uuid = sys.argv[4].strip()
 requested_current_source = sys.argv[5].strip().lower()
-feed_payload = json.loads(
+interactive_feed_payload = json.loads(
     (output_dir / "feed.page0.json").read_text(encoding="utf-8", errors="replace")
 )
 seed_path = input_dir / "last-liked-collection.json"
@@ -98,6 +109,22 @@ GENERIC_SEMANTIC_TOKENS = {
     "描述",
     "做同款",
     "捏同款",
+    "基于",
+    "首先根据",
+    "然后生成",
+    "画面要求",
+    "图片",
+    "图",
+    "风格",
+    "布局",
+    "标题",
+    "插画",
+    "文案",
+    "中文",
+    "角色设定",
+    "同款",
+    "结果",
+    "信息",
 }
 
 COMMUNITY_TAG_HINTS = (
@@ -128,6 +155,39 @@ INTENT_RULES = {
     "event_poster": ("海报", "封面", "宣传", "展示", "排版"),
     "object_collectible": ("彩蛋", " relic ", "物件", "底座", "材质"),
     "dual_character": ("双人", "2girls", "duo", "镜面", "mirror"),
+}
+
+CONCEPT_RULES = {
+    "personality_test": ("sbti", "人格测试", "测试结果", "标签库"),
+    "same_style_remix": ("做同款", "同款", "捏同款", "演绎"),
+    "childhood_meet": ("小时候的自己", "儿时的自己", "从前的自己"),
+    "outfit_reaction": ("换上", "换装", "兔女郎装", "前后反应"),
+    "jiangnan_garden": ("江南", "园林", "亭台", "竹影", "花窗", "太湖石"),
+    "easter_collectible": ("复活节", "彩蛋", "collectible", "彩蛋罢"),
+    "bottle_scene": ("水瓶", "瓶中", "漂浮状态", "专属水瓶"),
+    "comic_dialogue": ("对话框", "心声文字", "漫画", "分镜"),
+    "interview_scene": ("采访", "记者", "麦克风", "问答"),
+}
+
+CONCEPT_SCORE_WEIGHTS = {
+    "personality_test": 10,
+    "persona_profile": 8,
+    "same_style_remix": 2,
+    "childhood_meet": 8,
+    "outfit_reaction": 8,
+    "jiangnan_garden": 8,
+    "easter_collectible": 7,
+    "bottle_scene": 8,
+    "comic_dialogue": 5,
+    "interview_scene": 6,
+}
+
+RECALL_SOURCE_WEIGHTS = {
+    "interactive": 3,
+    "community_hot": 2,
+    "community_latest": 2,
+    "community_following": 3,
+    "search": 3,
 }
 
 
@@ -168,6 +228,13 @@ def run_neta_json_command(*args: str) -> dict[str, object]:
     return json.loads(completed.stdout)
 
 
+def safe_run_neta_json_command(*args: str) -> dict[str, object] | None:
+    try:
+        return run_neta_json_command(*args)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def collection_link(uuid: str) -> str:
     return f"https://app.nieta.art/collection/interaction?uuid={uuid}&entrance=community"
 
@@ -197,7 +264,7 @@ def pick_item_from_list_command(command_name: str) -> dict[str, object] | None:
     return None
 
 
-def extract_feed_collections(payload: dict[str, object]) -> list[dict[str, object]]:
+def extract_feed_collections(payload: dict[str, object], source_name: str) -> list[dict[str, object]]:
     modules = payload.get("module_list", [])
     collections: list[dict[str, object]] = []
     for module in modules:
@@ -208,25 +275,71 @@ def extract_feed_collections(payload: dict[str, object]) -> list[dict[str, objec
         data = module.get("json_data")
         if not isinstance(data, dict):
             continue
-        uuid = data.get("uuid")
+        uuid = data.get("uuid") or data.get("storyId")
         if not isinstance(uuid, str) or not uuid.strip():
             continue
+        creator = data.get("creator", {}) if isinstance(data.get("creator"), dict) else {}
+        if not creator:
+            creator = {
+                "uuid": data.get("user_uuid", ""),
+                "name": data.get("user_nick_name", ""),
+            }
+        raw_tags = data.get("tags")
+        if not isinstance(raw_tags, list):
+            raw_tags = data.get("hashtag_names", [])
+        if not isinstance(raw_tags, list):
+            raw_tags = []
         collections.append(
             {
                 "uuid": uuid,
                 "name": data.get("name", "") if isinstance(data.get("name"), str) else "",
-                "description": data.get("description", "") if isinstance(data.get("description"), str) else "",
+                "description": (
+                    data.get("description", "")
+                    if isinstance(data.get("description"), str)
+                    else data.get("content", "") if isinstance(data.get("content"), str) else ""
+                ),
                 "module_id": module.get("module_id", ""),
                 "template_id": module.get("template_id", ""),
                 "cover_url": data.get("coverUrl", "") if isinstance(data.get("coverUrl"), str) else "",
-                "has_video": bool(data.get("has_video", False)),
-                "is_interactive": bool(data.get("is_interactive", False)),
+                "has_video": bool(data.get("has_video", data.get("hasVideo", False))),
+                "is_interactive": bool(data.get("is_interactive", data.get("isInteractive", False))),
                 "cta_info": data.get("cta_info", {}) if isinstance(data.get("cta_info"), dict) else {},
-                "tags": data.get("tags", []) if isinstance(data.get("tags"), list) else [],
-                "creator": data.get("creator", {}) if isinstance(data.get("creator"), dict) else {},
+                "tags": raw_tags,
+                "creator": creator,
+                "recall_sources": [source_name],
+                "recall_type": data.get("recall_type", ""),
             }
         )
     return collections
+
+
+def merge_feed_collections(collections: list[dict[str, object]]) -> list[dict[str, object]]:
+    merged: dict[str, dict[str, object]] = {}
+    for item in collections:
+        uuid = item["uuid"]
+        existing = merged.get(uuid)
+        if existing is None:
+            merged[uuid] = dict(item)
+            merged[uuid]["recall_sources"] = list(item.get("recall_sources", []))
+            continue
+        for field in ("name", "description", "cover_url", "cta_info", "creator", "recall_type"):
+            if not existing.get(field) and item.get(field):
+                existing[field] = item[field]
+        existing["has_video"] = bool(existing.get("has_video") or item.get("has_video"))
+        existing["is_interactive"] = bool(existing.get("is_interactive") or item.get("is_interactive"))
+        existing["tags"] = unique_preserve(
+            [
+                *(existing.get("tags", []) if isinstance(existing.get("tags"), list) else []),
+                *(item.get("tags", []) if isinstance(item.get("tags"), list) else []),
+            ]
+        )
+        existing["recall_sources"] = unique_preserve(
+            [
+                *(existing.get("recall_sources", []) if isinstance(existing.get("recall_sources"), list) else []),
+                *(item.get("recall_sources", []) if isinstance(item.get("recall_sources"), list) else []),
+            ]
+        )
+    return list(merged.values())
 
 
 def is_community_tag(tag: str) -> bool:
@@ -252,12 +365,31 @@ def derive_intent_labels(title: str, description: str, cta_blob: str) -> list[st
     return labels
 
 
+def derive_concept_labels(title: str, description: str, cta_blob: str) -> list[str]:
+    haystack = f" {title} {description} {cta_blob} ".lower()
+    labels: list[str] = []
+    for label, markers in CONCEPT_RULES.items():
+        if any(marker.lower() in haystack for marker in markers):
+            labels.append(label)
+    persona_markers = ("sbti", "mbti", "人格", "社恐", "高冷", "内向", "外向", "i人", "e人", "标签")
+    if any(marker.lower() in haystack for marker in persona_markers):
+        labels.append("persona_profile")
+    lowered_title = (title or "").lower()
+    if "不是" in lowered_title and "是" in lowered_title:
+        labels.append("persona_profile")
+    return unique_preserve(labels)
+
+
 def build_collection_profile(feed_item: dict[str, object], detail_payload: dict[str, object]) -> dict[str, object]:
     collection = detail_payload.get("collection", {})
     if not isinstance(collection, dict):
         collection = {}
 
-    cta_info = collection.get("remix", {}).get("launch_prompt", {})
+    remix = collection.get("remix", {})
+    if not isinstance(remix, dict):
+        remix = {}
+
+    cta_info = remix.get("launch_prompt", {})
     if not isinstance(cta_info, dict):
         cta_info = {}
 
@@ -274,10 +406,10 @@ def build_collection_profile(feed_item: dict[str, object], detail_payload: dict[
 
     core_input = cta_info.get("core_input", "") if isinstance(cta_info.get("core_input"), str) else ""
     brief_input = cta_info.get("brief_input", "") if isinstance(cta_info.get("brief_input"), str) else ""
-    preset_description = collection.get("remix", {}).get("preset_description", "")
+    preset_description = remix.get("preset_description", "")
     if not isinstance(preset_description, str):
         preset_description = ""
-    reference_planning = collection.get("remix", {}).get("reference_planning", "")
+    reference_planning = remix.get("reference_planning", "")
     if not isinstance(reference_planning, str):
         reference_planning = ""
     description = collection.get("description", "") if isinstance(collection.get("description"), str) else ""
@@ -319,6 +451,7 @@ def build_collection_profile(feed_item: dict[str, object], detail_payload: dict[
 
     theme_labels = derive_theme_labels(title, description, cta_blob)
     intent_labels = derive_intent_labels(title, description, cta_blob)
+    concept_labels = derive_concept_labels(title, description, cta_blob)
     community_tags = [tag for tag in tag_names if is_community_tag(tag)]
     content_tags = [tag for tag in tag_names if not is_community_tag(tag)]
     seed_list_item = feed_item.get("seed_list_item", {}) if isinstance(feed_item.get("seed_list_item"), dict) else {}
@@ -334,6 +467,14 @@ def build_collection_profile(feed_item: dict[str, object], detail_payload: dict[
     seed_like_status = seed_list_item.get("likeStatus", "") if isinstance(seed_list_item.get("likeStatus"), str) else ""
     seed_favor_status = seed_list_item.get("favorStatus", "") if isinstance(seed_list_item.get("favorStatus"), str) else ""
     seed_pic_count = seed_list_item.get("picCount") if isinstance(seed_list_item.get("picCount"), int) else None
+    aspect_tokens = [seed_aspect] if seed_aspect else []
+    format_labels = unique_preserve(
+        aspect_tokens
+        + (["single_image"] if seed_pic_count == 1 else [])
+        + (["multi_image"] if isinstance(seed_pic_count, int) and seed_pic_count > 1 else [])
+        + (["interactive"] if feed_item.get("is_interactive") else [])
+        + (["video"] if feed_item.get("has_video") else [])
+    )
 
     return {
         "uuid": collection.get("uuid", feed_item["uuid"]),
@@ -354,12 +495,16 @@ def build_collection_profile(feed_item: dict[str, object], detail_payload: dict[
         "interaction_flags": interaction_flags,
         "theme_labels": theme_labels,
         "intent_labels": intent_labels,
+        "concept_labels": concept_labels,
+        "format_labels": format_labels,
         "semantic_tokens": semantic_tokens,
         "source_feed_item": {
             "module_id": feed_item.get("module_id", ""),
             "template_id": feed_item.get("template_id", ""),
             "has_video": feed_item.get("has_video", False),
             "is_interactive": feed_item.get("is_interactive", False),
+            "recall_sources": feed_item.get("recall_sources", []),
+            "recall_type": feed_item.get("recall_type", ""),
         },
         "seed_list_item": seed_list_item,
         "seed_character_names": seed_character_names,
@@ -426,6 +571,166 @@ def build_detail_seed_feed_item(detail_payload: dict[str, object]) -> dict[str, 
     }
 
 
+def llm_rerank_enabled() -> bool:
+    return bool(os.environ.get("NETA_RECOMMENDER_LLM_ENDPOINT") and os.environ.get("NETA_RECOMMENDER_LLM_API_KEY"))
+
+
+def extract_json_object(text: str) -> dict[str, object]:
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("empty llm response")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.S)
+        if not match:
+            raise
+        return json.loads(match.group(0))
+
+
+def run_llm_rerank(current: dict[str, object], scored_candidates: list[dict[str, object]]) -> dict[str, object]:
+    endpoint = os.environ["NETA_RECOMMENDER_LLM_ENDPOINT"].rstrip("/")
+    api_key = os.environ["NETA_RECOMMENDER_LLM_API_KEY"]
+    model = os.environ.get("NETA_RECOMMENDER_LLM_MODEL", "gpt-4o-mini")
+    api_path = os.environ.get("NETA_RECOMMENDER_LLM_API_PATH", "/v1/chat/completions")
+
+    candidate_payload = []
+    for item in scored_candidates[:5]:
+        profile = item["profile"]
+        candidate_payload.append(
+            {
+                "uuid": item["uuid"],
+                "title": item["title"],
+                "rule_score": item["score"],
+                "rule_confidence": item["confidence"],
+                "content_tags": profile.get("content_tags", [])[:8],
+                "community_tags": profile.get("community_tags", [])[:6],
+                "theme_labels": profile.get("theme_labels", []),
+                "intent_labels": profile.get("intent_labels", []),
+                "concept_labels": profile.get("concept_labels", []),
+                "interaction_flags": profile.get("interaction_flags", []),
+                "brief_input": profile.get("cta_info", {}).get("brief_input", ""),
+                "core_input_excerpt": str(profile.get("cta_info", {}).get("core_input", ""))[:240],
+            }
+        )
+
+    prompt_payload = {
+        "task": "Choose the best next Neta collection recommendation from the provided candidates only.",
+        "selection_requirements": [
+            "Prefer real semantic continuity with the current collection's playable idea, not just generic same-style remix overlap.",
+            "Treat personality/profile/test-like continuity as stronger than generic community continuity.",
+            "Use the rule score only as a hint, not as the sole decision factor.",
+            "Return exactly one candidate uuid from the provided list.",
+        ],
+        "current_collection": {
+            "uuid": current["uuid"],
+            "title": current["title"],
+            "content_tags": current.get("content_tags", [])[:8],
+            "theme_labels": current.get("theme_labels", []),
+            "intent_labels": current.get("intent_labels", []),
+            "concept_labels": current.get("concept_labels", []),
+            "interaction_flags": current.get("interaction_flags", []),
+            "brief_input": current.get("cta_info", {}).get("brief_input", ""),
+            "core_input_excerpt": str(current.get("cta_info", {}).get("core_input", ""))[:240],
+        },
+        "candidates": candidate_payload,
+        "output_schema": {
+            "recommended_uuid": "candidate uuid",
+            "confidence": "high|medium|low",
+            "reason_summary": "one sentence",
+            "reason_lines": ["short bullet 1", "short bullet 2"],
+        },
+    }
+
+    request_body = {
+        "model": model,
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a recommendation reranker. Choose only from the provided candidates and return valid JSON.",
+            },
+            {
+                "role": "user",
+                "content": json.dumps(prompt_payload, ensure_ascii=False),
+            },
+        ],
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": "Mozilla/5.0",
+    }
+
+    def open_request(body: dict[str, object]) -> str:
+        request = urllib.request.Request(
+            endpoint + api_path,
+            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return response.read().decode("utf-8")
+
+    try:
+        response_payload = json.loads(open_request(request_body))
+        content = response_payload["choices"][0]["message"]["content"]
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        if exc.code != 400 or "Stream must be set to true" not in error_body:
+            raise
+        stream_body = dict(request_body)
+        stream_body["stream"] = True
+        request = urllib.request.Request(
+            endpoint + api_path,
+            data=json.dumps(stream_body, ensure_ascii=False).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        streamed_content = ""
+        with urllib.request.urlopen(request, timeout=120) as response:
+            for raw in response:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line or not line.startswith("data: "):
+                    continue
+                data = line[6:]
+                if data == "[DONE]":
+                    break
+                event = json.loads(data)
+                delta = event.get("choices", [{}])[0].get("delta", {})
+                content_delta = delta.get("content", "")
+                if isinstance(content_delta, str):
+                    streamed_content += content_delta
+                elif isinstance(content_delta, list):
+                    for part in content_delta:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            streamed_content += str(part.get("text", ""))
+        content = streamed_content
+    parsed = extract_json_object(content)
+    if not isinstance(parsed, dict):
+        raise ValueError("llm rerank response is not an object")
+    return parsed
+
+
+def derive_search_queries(current: dict[str, object]) -> list[str]:
+    queries: list[str] = []
+    queries.extend(str(tag) for tag in current.get("content_tags", [])[:2])
+    queries.extend(str(name) for name in current.get("seed_character_names", [])[:1])
+    queries.extend(str(token) for token in current.get("concept_labels", []) if token != "same_style_remix")
+    title_tokens = [token for token in tokenize(str(current.get("title", ""))) if len(token) >= 2]
+    queries.extend(title_tokens[:2])
+    normalized: list[str] = []
+    for query in queries:
+        q = query.strip()
+        if not q:
+            continue
+        q = q.replace("_", " ")
+        normalized.append(q)
+    return unique_preserve(normalized)[:3]
+
+
 def build_seed_feed_item_from_list_item(list_item: dict[str, object]) -> dict[str, object]:
     return {
         "uuid": list_item.get("storyId", ""),
@@ -471,6 +776,10 @@ def score_candidate(
     candidate_themes = set(candidate["theme_labels"])
     current_intents = set(current["intent_labels"])
     candidate_intents = set(candidate["intent_labels"])
+    current_concepts = set(current["concept_labels"])
+    candidate_concepts = set(candidate["concept_labels"])
+    current_formats = set(current["format_labels"])
+    candidate_formats = set(candidate["format_labels"])
     current_community = set(token.lower() for token in current["community_tags"])
     candidate_community = set(token.lower() for token in candidate["community_tags"])
 
@@ -479,26 +788,54 @@ def score_candidate(
     theme_score, theme_overlap = weighted_overlap(current_themes, candidate_themes, theme_frequencies, 7)
     flag_overlap = sorted(current_flags & candidate_flags)
     intent_overlap = sorted(current_intents & candidate_intents)
+    concept_overlap = sorted(current_concepts & candidate_concepts)
+    format_overlap = sorted(current_formats & candidate_formats)
     community_overlap = sorted(current_community & candidate_community)
+    seed_character_overlap = sorted(
+        set(name.lower() for name in current.get("seed_character_names", []))
+        & set(token.lower() for token in candidate.get("content_tags", []) + candidate.get("tag_names", []))
+    )
+    recall_source_overlap = candidate["source_feed_item"].get("recall_sources", [])
+    recall_source_score = sum(RECALL_SOURCE_WEIGHTS.get(source, 1) for source in recall_source_overlap)
 
     score = 0
     score += tag_score
-    score += min(token_score, 16)
+    score += min(token_score, 8)
     score += theme_score
-    score += len(flag_overlap) * 3
+    score += len(flag_overlap) * 2
     score += len(intent_overlap) * 5
-    score += min(len(community_overlap), 2)
+    score += sum(CONCEPT_SCORE_WEIGHTS.get(label, 4) for label in concept_overlap)
+    score += len(format_overlap) * 3
+    score += len(seed_character_overlap) * 6
+    score += min(len(community_overlap), 1)
+    score += min(recall_source_score, 6)
 
     if candidate["source_feed_item"]["is_interactive"]:
-        score += 2
+        score += 1
     if current["creator_name"] and candidate["creator_name"] and current["creator_name"] != candidate["creator_name"]:
         score += 1
+    if current.get("seed_aspect") and current.get("seed_aspect") == candidate.get("seed_aspect"):
+        score += 2
+    if current.get("seed_pic_count") is not None and current.get("seed_pic_count") == candidate.get("seed_pic_count"):
+        score += 2
+    if not (theme_overlap or intent_overlap or concept_overlap or tag_overlap or seed_character_overlap):
+        score -= 4
+    if community_overlap and not (theme_overlap or intent_overlap or concept_overlap or tag_overlap):
+        score -= 2
 
     reasons: list[str] = []
+    if concept_overlap:
+        reasons.append(f"shared concept labels: {', '.join(concept_overlap)}")
     if theme_overlap:
         reasons.append(f"shared theme labels: {', '.join(theme_overlap)}")
     if intent_overlap:
         reasons.append(f"shared intent labels: {', '.join(intent_overlap)}")
+    if format_overlap:
+        reasons.append(f"shared format labels: {', '.join(format_overlap[:3])}")
+    if seed_character_overlap:
+        reasons.append(f"seed character continuity: {', '.join(seed_character_overlap[:3])}")
+    if recall_source_overlap and len(recall_source_overlap) > 1:
+        reasons.append(f"multi-route recall: {', '.join(recall_source_overlap[:4])}")
     if flag_overlap:
         reasons.append(f"shared interaction flags: {', '.join(flag_overlap)}")
     if tag_overlap:
@@ -510,9 +847,10 @@ def score_candidate(
     if not reasons:
         reasons.append("kept as fallback candidate from the live feed")
 
-    thematic_strength = bool(theme_overlap or intent_overlap or tag_overlap)
+    strong_concept_overlap = [label for label in concept_overlap if CONCEPT_SCORE_WEIGHTS.get(label, 4) >= 5]
+    thematic_strength = bool(theme_overlap or intent_overlap or strong_concept_overlap or tag_overlap or seed_character_overlap)
     continuity_only = bool(community_overlap or flag_overlap) and not thematic_strength
-    confidence = "high" if theme_overlap or len(intent_overlap) >= 2 else "medium" if thematic_strength else "low"
+    confidence = "high" if theme_overlap or len(intent_overlap) >= 2 or len(strong_concept_overlap) >= 2 else "medium" if thematic_strength else "low"
     if continuity_only:
         confidence = "low"
 
@@ -528,6 +866,10 @@ def score_candidate(
             "interaction_overlap": flag_overlap,
             "theme_overlap": theme_overlap,
             "intent_overlap": intent_overlap,
+            "concept_overlap": concept_overlap,
+            "format_overlap": format_overlap,
+            "seed_character_overlap": seed_character_overlap,
+            "recall_source_overlap": recall_source_overlap,
             "community_overlap": community_overlap,
             "continuity_only": continuity_only,
         },
@@ -535,7 +877,8 @@ def score_candidate(
     }
 
 
-feed_collections = extract_feed_collections(feed_payload)
+interactive_feed_collections = extract_feed_collections(interactive_feed_payload, "interactive")
+feed_collections = interactive_feed_collections
 if not feed_collections:
     raise RuntimeError("no collection-like items found in feed.page0.json")
 
@@ -588,14 +931,44 @@ else:
         current_feed_item = feed_collections[0]
         current_detail = run_neta_read_collection(current_feed_item["uuid"])
 
-candidate_feed_items = [item for item in feed_collections if item["uuid"] != current_feed_item["uuid"]][:5]
-candidate_details = [run_neta_read_collection(item["uuid"]) for item in candidate_feed_items]
-
 current_profile = build_collection_profile(current_feed_item, current_detail)
-candidate_profiles = [
-    build_collection_profile(item, detail)
-    for item, detail in zip(candidate_feed_items, candidate_details)
-]
+
+recall_payloads: dict[str, dict[str, object] | None] = {
+    "interactive": interactive_feed_payload,
+    "community_hot": safe_run_neta_json_command("request_community_feed", "--theme", "热门", "--page_index", "0", "--page_size", "10"),
+    "community_latest": safe_run_neta_json_command("request_community_feed", "--theme", "最新", "--page_index", "0", "--page_size", "10"),
+    "community_following": safe_run_neta_json_command("request_community_feed", "--theme", "关注", "--page_index", "0", "--page_size", "10"),
+}
+
+search_queries = derive_search_queries(current_profile)
+search_payloads: dict[str, dict[str, object] | None] = {}
+for query in search_queries:
+    payload = safe_run_neta_json_command(
+        "suggest_content",
+        "--intent",
+        "search",
+        "--search_keywords",
+        query,
+        "--page_index",
+        "0",
+        "--page_size",
+        "10",
+    )
+    if payload:
+        search_payloads[query] = payload
+
+all_recall_collections: list[dict[str, object]] = []
+for source_name, payload in recall_payloads.items():
+    if not payload:
+        continue
+    all_recall_collections.extend(extract_feed_collections(payload, source_name))
+for query, payload in search_payloads.items():
+    all_recall_collections.extend(extract_feed_collections(payload, "search"))
+
+merged_recall_collections = merge_feed_collections(all_recall_collections)
+candidate_feed_items = [item for item in merged_recall_collections if item["uuid"] != current_feed_item["uuid"]][:12]
+candidate_details = [run_neta_read_collection(item["uuid"]) for item in candidate_feed_items]
+candidate_profiles = [build_collection_profile(item, detail) for item, detail in zip(candidate_feed_items, candidate_details)]
 
 all_profiles = [current_profile, *candidate_profiles]
 tag_frequencies = collections.Counter(
@@ -622,11 +995,44 @@ scored_candidates.sort(key=lambda item: (-item["score"], item["uuid"]))
 
 recommended = scored_candidates[0] if scored_candidates else None
 fallbacks = scored_candidates[1:4] if len(scored_candidates) > 1 else []
+selection_rule = "context_driven_rerank"
+llm_rerank_result: dict[str, object] | None = None
+
+if scored_candidates and llm_rerank_enabled():
+    try:
+        llm_rerank_result = run_llm_rerank(current_profile, scored_candidates)
+        llm_uuid = llm_rerank_result.get("recommended_uuid")
+        if isinstance(llm_uuid, str):
+            llm_selected = next((item for item in scored_candidates if item["uuid"] == llm_uuid), None)
+            if llm_selected is not None:
+                recommended = llm_selected
+                selection_rule = "context_driven_rerank_plus_llm"
+                if isinstance(llm_rerank_result.get("confidence"), str):
+                    recommended["confidence"] = llm_rerank_result["confidence"]
+                if isinstance(llm_rerank_result.get("reason_summary"), str) and llm_rerank_result["reason_summary"].strip():
+                    summary_line = llm_rerank_result["reason_summary"].strip()
+                    reason_lines = llm_rerank_result.get("reason_lines", [])
+                    rebuilt_lines = [summary_line]
+                    if isinstance(reason_lines, list):
+                        rebuilt_lines.extend(str(line).strip() for line in reason_lines if str(line).strip())
+                    recommended["reason_lines"] = unique_preserve(rebuilt_lines)
+                fallbacks = [item for item in scored_candidates if item["uuid"] != llm_uuid][:3]
+    except Exception as exc:  # noqa: BLE001
+        llm_rerank_result = {"error": str(exc)}
 
 normalized = {
     "current_collection": current_profile,
     "candidate_collections": candidate_profiles,
     "candidate_count": len(candidate_profiles),
+    "recall_summary": {
+        "sources": {
+            key: len(extract_feed_collections(value, key)) if value else 0
+            for key, value in recall_payloads.items()
+        },
+        "search_queries": search_queries,
+        "search_sources": {key: len(extract_feed_collections(value, "search")) for key, value in search_payloads.items()},
+        "merged_candidate_count": len(candidate_profiles),
+    },
 }
 
 recommendation = {
@@ -647,12 +1053,13 @@ recommendation = {
     },
     "evidence": {
         "source": "neta_interactive_feed",
-        "selection_rule": "context_driven_rerank",
+        "selection_rule": selection_rule,
         "current_seed_mode": resolved_seed_mode,
         "candidate_count": len(candidate_profiles),
         "top_candidate_score": recommended["score"] if recommended else 0,
         "top_candidate_confidence": recommended["confidence"] if recommended else "low",
         "top_candidate_evidence": recommended["evidence"] if recommended else {},
+        "llm_rerank": llm_rerank_result,
     },
     "fallback_candidates": [
         {
@@ -718,7 +1125,7 @@ summary = f"""# Neta Next Collection Recommendation
 - confidence:
   - {recommended["confidence"] if recommended else "low"}
 - selection rule:
-  - context_driven_rerank
+  - {selection_rule}
 - primary reason:
   - {recommended["reason_lines"][0] if recommended else "none"}
 
@@ -771,12 +1178,20 @@ def render_candidate_card(item: dict[str, object], rank: int, recommended_uuid: 
       <h3>{html.escape(item["title"])}</h3>
       <p class="candidate-reason">{html.escape(item["reason_lines"][0] if item["reason_lines"] else "no reason")}</p>
       <div class="candidate-section">
+        <div class="label">concept overlap</div>
+        <div class="chip-row">{chips(evidence.get("concept_overlap", []))}</div>
+      </div>
+      <div class="candidate-section">
         <div class="label">theme overlap</div>
         <div class="chip-row">{chips(evidence.get("theme_overlap", []))}</div>
       </div>
       <div class="candidate-section">
         <div class="label">intent overlap</div>
         <div class="chip-row">{chips(evidence.get("intent_overlap", []))}</div>
+      </div>
+      <div class="candidate-section">
+        <div class="label">format overlap</div>
+        <div class="chip-row">{chips(evidence.get("format_overlap", []))}</div>
       </div>
       <div class="candidate-section">
         <div class="label">interaction overlap</div>

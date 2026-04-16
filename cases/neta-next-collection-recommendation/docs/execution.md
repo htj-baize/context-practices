@@ -49,6 +49,15 @@ The case-local scripts do not depend on a hard-coded machine path for Node. They
 - the current process `PATH`
 - the user shell environment
 
+Optional LLM rerank can be enabled by adding these values to `.env.local`:
+
+- `NETA_RECOMMENDER_LLM_ENDPOINT`
+- `NETA_RECOMMENDER_LLM_API_KEY`
+- `NETA_RECOMMENDER_LLM_MODEL`
+- `NETA_RECOMMENDER_LLM_API_PATH`
+
+When configured, the runner still performs rule rerank first and then asks the model to choose from the existing candidate set only.
+
 Current observed state:
 
 - the vendored repo installs successfully

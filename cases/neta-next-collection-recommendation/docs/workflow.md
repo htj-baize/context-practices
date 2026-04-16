@@ -56,6 +56,19 @@ Generate a stable structured recommendation result:
 - fallback candidates
 - cover image and deep link
 
+Default mode is rule rerank:
+
+- concept labels
+- theme labels
+- intent labels
+- interaction / community continuity
+
+Optional second-stage mode can be enabled with LLM config in `.env.local`:
+
+- rule rerank first narrows and scores candidates
+- LLM rerank chooses only from the provided candidate set
+- the final output records whether selection came from pure rules or `context_driven_rerank_plus_llm`
+
 ## Success Condition
 
 This case is successful when one runner can show:
