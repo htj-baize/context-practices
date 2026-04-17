@@ -60,3 +60,37 @@ Each case should answer:
 - what the `target` object is
 - which skills participate
 - what concrete output proves the case is useful
+
+## Local Development
+
+This repository is expected to run on Node `22.x`.
+
+If you use `nvm`:
+
+```bash
+nvm use
+```
+
+Install dependencies from this repository root:
+
+```bash
+corepack enable
+pnpm install
+```
+
+Run the main web app from the `context-practices` repository root:
+
+```bash
+pnpm dev
+```
+
+Useful commands:
+
+```bash
+pnpm build
+pnpm lint
+pnpm typecheck
+pnpm check
+```
+
+The web app lives in [`apps/practices-web`](./apps/practices-web), but you should still start it from the `context-practices` root so workspace resolution stays correct.
