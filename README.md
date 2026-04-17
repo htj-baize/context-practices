@@ -50,6 +50,8 @@ The initial practice roadmap is:
    - validate world-state growth, route inspection, branching, and resolution inside an interactive narrative domain
 4. `neta-next-collection-recommendation`
    - validate a real external recommendation stream as the upstream source for next-collection recommendation
+5. `neta-studio-continuation-engine`
+   - validate a continuation context practice hosted by a real `neta-studio` world runtime
 
 Each case should answer:
 

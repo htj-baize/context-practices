@@ -1,0 +1,169 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  assembleNetaStudioContext,
+  composeNetaStudioContinuationRequest,
+  deriveNetaStudioContinuationCandidates,
+  rankNetaStudioContinuationOffers,
+} from "../../../../context-engine/dist/index.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const CASE_DIR = path.resolve(__dirname, "..");
+const FIXTURES_DIR = path.join(CASE_DIR, "fixtures");
+const OUTPUT_DIR = path.join(CASE_DIR, "outputs");
+
+const readJson = (targetPath) =>
+  JSON.parse(fs.readFileSync(targetPath, "utf-8"));
+
+const writeJson = (targetPath, payload) => {
+  fs.writeFileSync(
+    targetPath,
+    `${JSON.stringify(payload, null, 2)}\n`,
+    "utf-8",
+  );
+};
+
+const toContextOutput = (context) => ({
+  worldId: context.worldId,
+  contextKind: "studio_continuation_context",
+  runtimeHost: "neta-studio",
+  worldName: context.worldName,
+  focus: {
+    activeConversationId: context.session.activeConversationId,
+    recentViewedAtomIds: context.session.recentViewedAtomIds,
+    recentViewedWorkIds: context.session.recentViewedWorkIds,
+    recentCreatedAtomIds: context.session.recentCreatedAtomIds,
+    recentCreatedWorkIds: context.session.recentCreatedWorkIds,
+  },
+  worldState: {
+    atomCount: context.atoms.length,
+    workCount: context.works.length,
+    coreConflict: context.config?.coreConflict ?? null,
+    tone: context.config?.tone ?? null,
+  },
+  recentIntent: {
+    userMessages: context.session.recentUserMessages,
+    assistantMessages: context.session.recentAssistantMessages,
+  },
+  continuationReadiness: context.readiness,
+});
+
+const toCandidatesOutput = (context, candidates) => ({
+  worldId: context.worldId,
+  candidateCount: candidates.length,
+  candidates,
+});
+
+const toOffersOutput = (context, offers) => ({
+  worldId: context.worldId,
+  offerCount: offers.length,
+  offers,
+  topOfferId: offers[0]?.id ?? null,
+});
+
+const buildSummary = (firstOffers, secondOffers) => `# Neta Studio Continuation Engine Summary
+
+## Fixture A
+
+- state:
+  - first continuation round
+- top offer:
+  - \`${firstOffers.offers[0].headline}\`
+
+## Fixture B
+
+- state:
+  - after one continuation has already completed
+- top offer:
+  - \`${secondOffers.offers[0].headline}\`
+
+## What This Demo Shows
+
+The case produces different top continuation routes as the same world advances.
+
+- in the first round, the engine prioritizes a low-cost scene continuation that stays closest to the user's immediate desire
+- after one continuation, the engine shifts toward a more public escalation path with higher consequence cost
+
+## Current Value
+
+This makes the practice inspectable at four layers:
+
+1. continuation context
+2. continuation candidates
+3. ranked offers
+4. execution request
+`;
+
+const buildComparisonNotes = (firstOffers, secondOffers) => `# Comparison Notes
+
+## Fixture A
+
+- top offer:
+  - \`${firstOffers.offers[0].headline}\`
+- action:
+  - \`${firstOffers.offers[0].actionType}\`
+
+## Fixture B
+
+- top offer:
+  - \`${secondOffers.offers[0].headline}\`
+- action:
+  - \`${secondOffers.offers[0].actionType}\`
+
+## What Changed
+
+Fixture A stays close to the user's immediate request and prefers a lighter scene-level continuation.
+
+Fixture B has already advanced once, so the engine shifts to:
+
+- public escalation
+- relationship payoff
+- prior-round consequence settlement
+`;
+
+const processFixture = (fixtureName, suffix) => {
+  const snapshot = readJson(path.join(FIXTURES_DIR, fixtureName));
+  const context = assembleNetaStudioContext(snapshot);
+  const candidates = deriveNetaStudioContinuationCandidates(context);
+  const offers = rankNetaStudioContinuationOffers(context, candidates);
+  const candidate = candidates.find((item) => item.id === offers[0]?.candidateId);
+
+  if (!candidate || !offers[0]) {
+    throw new Error(`No continuation output available for fixture ${fixtureName}`);
+  }
+
+  const request = composeNetaStudioContinuationRequest(
+    context,
+    offers[0],
+    candidate,
+  );
+
+  writeJson(path.join(OUTPUT_DIR, `continuation-context${suffix}.json`), toContextOutput(context));
+  writeJson(path.join(OUTPUT_DIR, `continuation-candidates${suffix}.json`), toCandidatesOutput(context, candidates));
+  writeJson(path.join(OUTPUT_DIR, `continuation-offers${suffix}.json`), toOffersOutput(context, offers));
+  writeJson(path.join(OUTPUT_DIR, `execution-request${suffix}.json`), request);
+
+  return toOffersOutput(context, offers);
+};
+
+const main = () => {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  const firstOffers = processFixture("studio-world-snapshot.json", "");
+  const secondOffers = processFixture(
+    "studio-world-snapshot-after-continuation.json",
+    "-v2",
+  );
+  fs.writeFileSync(path.join(OUTPUT_DIR, "summary.md"), buildSummary(firstOffers, secondOffers), "utf-8");
+  fs.writeFileSync(
+    path.join(OUTPUT_DIR, "comparison-notes.md"),
+    buildComparisonNotes(firstOffers, secondOffers),
+    "utf-8",
+  );
+  console.log(`Demo outputs written to ${OUTPUT_DIR}`);
+};
+
+main();

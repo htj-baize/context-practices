@@ -1,0 +1,45 @@
+{
+  "worldId": "world-white-jin-diplomat-v2",
+  "candidateCount": 3,
+  "candidates": [
+    {
+      "id": "candidate-escalation-followup",
+      "dynamicType": "escalation",
+      "sourceAtomIds": [
+        "atom-bai-jin",
+        "atom-zhou-lin"
+      ],
+      "sourceWorkIds": [
+        "work-missing-evidence"
+      ],
+      "worldReason": "the second-round world state already moved private risk toward a public arena, which supports escalation",
+      "brief": "push the current line into a public near-loss-of-control beat"
+    },
+    {
+      "id": "candidate-promise-relationship",
+      "dynamicType": "promise",
+      "sourceAtomIds": [
+        "atom-bai-jin",
+        "atom-zhou-lin"
+      ],
+      "sourceWorkIds": [
+        "work-missing-evidence"
+      ],
+      "worldReason": "the newly involved relationship object now has enough narrative pressure to be paid off",
+      "brief": "turn the new relationship into an unavoidable alliance or conflict"
+    },
+    {
+      "id": "candidate-resolution-round-one",
+      "dynamicType": "resolution",
+      "sourceAtomIds": [
+        "atom-bai-jin"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion",
+        "work-missing-evidence"
+      ],
+      "worldReason": "the first continuation round has already landed and can now be settled into a concrete consequence",
+      "brief": "settle the prior round into one explicit consequence"
+    }
+  ]
+}

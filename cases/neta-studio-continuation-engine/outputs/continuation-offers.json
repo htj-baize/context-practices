@@ -1,0 +1,86 @@
+{
+  "worldId": "world-white-jin-diplomat",
+  "offerCount": 3,
+  "offers": [
+    {
+      "id": "offer-promise-primary",
+      "candidateId": "candidate-promise-primary",
+      "headline": "让这次重逢留下一个无法擦掉的证据",
+      "whyNow": "the first work already created the cleanest payoff seam in the current world",
+      "sourceAtomIds": [
+        "atom-bai-jin",
+        "atom-rain-dock"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion"
+      ],
+      "actionType": "deepen",
+      "expectedOutput": "new_work",
+      "intensity": "deep",
+      "estimatedTokenCost": 1937,
+      "creditPrice": 24,
+      "score": 94,
+      "scoreBreakdown": {
+        "attachment": 52,
+        "urgency": 16,
+        "pull": 16,
+        "worldFit": 24,
+        "costPenalty": 14,
+        "repetitionPenalty": 0
+      }
+    },
+    {
+      "id": "offer-escalation-protagonist",
+      "candidateId": "candidate-escalation-protagonist",
+      "headline": "处理这条线里已经暴露出来的矛盾来源",
+      "whyNow": "the current world state provides a valid next-step pull rather than a generic suggestion",
+      "sourceAtomIds": [
+        "atom-bai-jin"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion"
+      ],
+      "actionType": "escalate",
+      "expectedOutput": "new_work",
+      "intensity": "intense",
+      "estimatedTokenCost": 2796,
+      "creditPrice": 34,
+      "score": 92,
+      "scoreBreakdown": {
+        "attachment": 52,
+        "urgency": 18,
+        "pull": 18,
+        "worldFit": 24,
+        "costPenalty": 20,
+        "repetitionPenalty": 0
+      }
+    },
+    {
+      "id": "offer-gap-protagonist",
+      "candidateId": "candidate-gap-protagonist",
+      "headline": "我想看她第一次露出破绽的场面。",
+      "whyNow": "the latest session intent still wants a close-in continuation around the current protagonist focus",
+      "sourceAtomIds": [
+        "atom-bai-jin"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion"
+      ],
+      "actionType": "continue",
+      "expectedOutput": "new_scene",
+      "intensity": "light",
+      "estimatedTokenCost": 1078,
+      "creditPrice": 14,
+      "score": 91,
+      "scoreBreakdown": {
+        "attachment": 52,
+        "urgency": 9,
+        "pull": 14,
+        "worldFit": 24,
+        "costPenalty": 8,
+        "repetitionPenalty": 0
+      }
+    }
+  ],
+  "topOfferId": "offer-promise-primary"
+}

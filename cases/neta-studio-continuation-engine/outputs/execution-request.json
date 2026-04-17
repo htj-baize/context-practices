@@ -1,0 +1,25 @@
+{
+  "worldId": "world-white-jin-diplomat",
+  "offerId": "offer-promise-primary",
+  "actionType": "deepen",
+  "expectedOutput": "new_work",
+  "sourceAtomIds": [
+    "atom-bai-jin",
+    "atom-rain-dock"
+  ],
+  "sourceWorkIds": [
+    "work-rain-reunion"
+  ],
+  "promptBrief": "让这次重逢留下一个无法擦掉的证据",
+  "worldReason": "the first work already introduced a consequence seam that can be pushed into a concrete follow-up",
+  "executionNotes": [
+    "keep the continuation tightly grounded in the current source objects",
+    "produce a concrete artifact rather than a generic explanation",
+    "make the result suitable for immediate world writeback"
+  ],
+  "writebackPlan": {
+    "target": "works",
+    "mode": "append",
+    "followup": "re-run continuation routing on the updated world snapshot"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "worldId": "world-white-jin-diplomat-v2",
+  "offerId": "offer-escalation-followup",
+  "actionType": "escalate",
+  "expectedOutput": "new_work",
+  "sourceAtomIds": [
+    "atom-bai-jin",
+    "atom-zhou-lin"
+  ],
+  "sourceWorkIds": [
+    "work-missing-evidence"
+  ],
+  "promptBrief": "让白槿在公开场合第一次差点失控",
+  "worldReason": "the second-round world state already moved private risk toward a public arena, which supports escalation",
+  "executionNotes": [
+    "keep the protagonist controlled rather than fully collapsing",
+    "make the consequence externally visible, not only internal",
+    "ensure the result can be written back into the world as a concrete next-state artifact"
+  ],
+  "writebackPlan": {
+    "target": "works",
+    "mode": "append",
+    "followup": "re-run continuation routing with higher repetition penalty against the just-executed escalation path"
+  }
+}

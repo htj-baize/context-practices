@@ -1,0 +1,88 @@
+{
+  "worldId": "world-white-jin-diplomat-v2",
+  "offerCount": 3,
+  "offers": [
+    {
+      "id": "offer-escalation-followup",
+      "candidateId": "candidate-escalation-followup",
+      "headline": "让白槿在公开场合第一次差点失控",
+      "whyNow": "the world already advanced once, so the next strongest move is a costlier public escalation",
+      "sourceAtomIds": [
+        "atom-bai-jin",
+        "atom-zhou-lin"
+      ],
+      "sourceWorkIds": [
+        "work-missing-evidence"
+      ],
+      "actionType": "escalate",
+      "expectedOutput": "new_work",
+      "intensity": "intense",
+      "estimatedTokenCost": 3092,
+      "creditPrice": 38,
+      "score": 102,
+      "scoreBreakdown": {
+        "attachment": 52,
+        "urgency": 18,
+        "pull": 30,
+        "worldFit": 24,
+        "costPenalty": 22,
+        "repetitionPenalty": 0
+      }
+    },
+    {
+      "id": "offer-promise-relationship",
+      "candidateId": "candidate-promise-relationship",
+      "headline": "让白槿和关键关系对象变成无法回避的联盟",
+      "whyNow": "the current world state provides a valid next-step pull rather than a generic suggestion",
+      "sourceAtomIds": [
+        "atom-bai-jin",
+        "atom-zhou-lin"
+      ],
+      "sourceWorkIds": [
+        "work-missing-evidence"
+      ],
+      "actionType": "deepen",
+      "expectedOutput": "new_work",
+      "intensity": "deep",
+      "estimatedTokenCost": 1977,
+      "creditPrice": 24,
+      "score": 94,
+      "scoreBreakdown": {
+        "attachment": 52,
+        "urgency": 16,
+        "pull": 16,
+        "worldFit": 24,
+        "costPenalty": 14,
+        "repetitionPenalty": 0
+      }
+    },
+    {
+      "id": "offer-resolution-round-one",
+      "candidateId": "candidate-resolution-round-one",
+      "headline": "先让上一轮的代价结算出一个明确后果",
+      "whyNow": "the prior continuation round now has enough state to be settled into one explicit consequence",
+      "sourceAtomIds": [
+        "atom-bai-jin"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion",
+        "work-missing-evidence"
+      ],
+      "actionType": "variant",
+      "expectedOutput": "work_variant",
+      "intensity": "light",
+      "estimatedTokenCost": 1296,
+      "creditPrice": 16,
+      "score": 76,
+      "scoreBreakdown": {
+        "attachment": 40,
+        "urgency": 11,
+        "pull": 10,
+        "worldFit": 24,
+        "costPenalty": 9,
+        "repetitionPenalty": 0
+      }
+    }
+  ],
+  "topOfferId": "offer-escalation-followup"
+}

@@ -87,3 +87,32 @@ A system needs to:
 - the context stack can consume real external content streams
 - an upstream feed can be normalized into context-shaped recommendation state
 - recommendation output can be expressed as a stable structured result instead of an opaque UI-only action
+
+## Case 5: Neta Studio Continuation Engine
+
+### Goal
+
+Validate a continuation-oriented context practice using a real `neta-studio` world as the runtime host.
+
+### Example Problem
+
+A studio world already contains:
+
+- world config
+- atoms
+- works
+- a recent chat session
+
+but the system still needs to:
+
+- determine what continuation is valid now
+- route the top continuation offers
+- explain the cost of that continuation
+- compose an execution request that can write the result back
+
+### What This Case Should Prove
+
+- a live studio world can be assembled into an explicit continuation context
+- continuation validity can be derived from world state rather than generic suggestion logic
+- offer routing can stay inspectable and cost-aware
+- continuation execution can be represented as a structured request before writeback

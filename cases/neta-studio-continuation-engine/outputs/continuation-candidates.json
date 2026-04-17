@@ -1,0 +1,43 @@
+{
+  "worldId": "world-white-jin-diplomat",
+  "candidateCount": 3,
+  "candidates": [
+    {
+      "id": "candidate-promise-primary",
+      "dynamicType": "promise",
+      "sourceAtomIds": [
+        "atom-bai-jin",
+        "atom-rain-dock"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion"
+      ],
+      "worldReason": "the first work already introduced a consequence seam that can be pushed into a concrete follow-up",
+      "brief": "cash in the first work's unresolved consequence"
+    },
+    {
+      "id": "candidate-gap-protagonist",
+      "dynamicType": "gap",
+      "sourceAtomIds": [
+        "atom-bai-jin"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion"
+      ],
+      "worldReason": "the current protagonist focus is established, but still lacks a clear failure or crack scene",
+      "brief": "show the protagonist's first visible crack"
+    },
+    {
+      "id": "candidate-escalation-protagonist",
+      "dynamicType": "escalation",
+      "sourceAtomIds": [
+        "atom-bai-jin"
+      ],
+      "sourceWorkIds": [
+        "work-rain-reunion"
+      ],
+      "worldReason": "the current line already carries enough risk to be escalated into a costlier public consequence",
+      "brief": "push the protagonist into a higher-cost public consequence"
+    }
+  ]
+}

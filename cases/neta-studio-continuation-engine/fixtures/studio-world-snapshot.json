@@ -1,0 +1,66 @@
+{
+  "worldId": "world-white-jin-diplomat",
+  "config": {
+    "name": "白槿的灰幕外交局",
+    "genre": "urban intrigue",
+    "tone": "dangerous, intimate, restrained",
+    "era": "modern",
+    "rules": [
+      "身份与公开立场经常相互冲突",
+      "任何关系推进都会留下可追踪后果"
+    ],
+    "overview": "一座表面秩序完好的沿海城市里，外交、商业与地下交易在同一套礼仪里缠绕。",
+    "coreConflict": "白槿必须在维持合法身份与掩盖旧案牵连之间继续周旋。",
+    "language": "zh"
+  },
+  "atoms": [
+    {
+      "id": "atom-bai-jin",
+      "type": "character",
+      "name": "白槿",
+      "description": "冷静、危险、像在隐藏身份的女外交官。",
+      "tags": ["外交官", "隐藏身份", "危险关系"],
+      "content": [
+        { "key": "public_role", "value": "沿海合作事务代表" },
+        { "key": "private_risk", "value": "七年前旧案知情人" }
+      ],
+      "createdAt": 1713376800000,
+      "updatedAt": 1713376800000
+    },
+    {
+      "id": "atom-rain-dock",
+      "type": "location",
+      "name": "雨夜码头",
+      "description": "用于秘密接头与失踪货物交割的旧港口。",
+      "tags": ["重逢", "证据", "旧港口"],
+      "content": [
+        { "key": "risk", "value": "容易留下可被拍到的证据" }
+      ],
+      "createdAt": 1713376860000,
+      "updatedAt": 1713376860000
+    }
+  ],
+  "works": [
+    {
+      "id": "work-rain-reunion",
+      "title": "雨夜重逢",
+      "content": "白槿在雨夜码头见到了七年前失踪的人，对方带来一只沾血的防水档案袋，却没有解释自己为何还活着。",
+      "atomIds": ["atom-bai-jin", "atom-rain-dock"],
+      "createdAt": 1713377100000
+    }
+  ],
+  "session": {
+    "activeConversationId": "session-current",
+    "recentUserMessages": [
+      "先不要开大世界，先围绕白槿继续做。",
+      "我想看她第一次露出破绽的场面。"
+    ],
+    "recentAssistantMessages": [
+      "可以把焦点放在雨夜码头之后留下的后果。"
+    ],
+    "recentViewedAtomIds": ["atom-bai-jin"],
+    "recentViewedWorkIds": ["work-rain-reunion"],
+    "recentCreatedAtomIds": ["atom-bai-jin"],
+    "recentCreatedWorkIds": ["work-rain-reunion"]
+  }
+}

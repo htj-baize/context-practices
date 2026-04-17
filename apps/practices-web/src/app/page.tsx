@@ -6,9 +6,9 @@ import { listPracticeCases } from "@/lib/cases";
 
 const CASES = listPracticeCases();
 const UNIFIED_ROUTE = {
-  href: "/neta-next-collection-recommendation-unified",
-  title: "Neta Next Collection Unified",
-  summary: "Single-page dark surface: vertical Feed browsing plus horizontal Next decision flow.",
+  href: "/neta-studio-continuation-engine",
+  title: "Neta Studio Continuation Engine",
+  summary: "Fixture-backed playground that validates context assembly, continuation candidates, ranked offers, and execution requests.",
 };
 
 export default function HomePage() {
@@ -150,7 +150,7 @@ export default function HomePage() {
                   Product-style validation
                 </div>
                 <p className="mt-2 text-sm leading-6 text-white/68">
-                  Start from a real recommendation flow, then optimize for mobile scanning, preference feedback, and explanation review.
+                  Start from real world context, then inspect how continuation validity, pricing, and execution request composition behave.
                 </p>
               </div>
               <div className="rounded-[1.4rem] border border-sky-400/16 bg-sky-400/8 p-4">

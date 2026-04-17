@@ -1,0 +1,87 @@
+{
+  "worldId": "world-white-jin-diplomat-v2",
+  "config": {
+    "name": "白槿的灰幕外交局",
+    "genre": "urban intrigue",
+    "tone": "dangerous, intimate, restrained",
+    "era": "modern",
+    "rules": [
+      "身份与公开立场经常相互冲突",
+      "任何关系推进都会留下可追踪后果",
+      "公开场合的任何失控都会立刻被政治化"
+    ],
+    "overview": "一座表面秩序完好的沿海城市里，外交、商业与地下交易在同一套礼仪里缠绕。",
+    "coreConflict": "白槿必须在维持合法身份与掩盖旧案牵连之间继续周旋。",
+    "language": "zh"
+  },
+  "atoms": [
+    {
+      "id": "atom-bai-jin",
+      "type": "character",
+      "name": "白槿",
+      "description": "冷静、危险、像在隐藏身份的女外交官。",
+      "tags": ["外交官", "隐藏身份", "危险关系"],
+      "content": [
+        { "key": "public_role", "value": "沿海合作事务代表" },
+        { "key": "private_risk", "value": "七年前旧案知情人" }
+      ],
+      "createdAt": 1713376800000,
+      "updatedAt": 1713376800000
+    },
+    {
+      "id": "atom-rain-dock",
+      "type": "location",
+      "name": "雨夜码头",
+      "description": "用于秘密接头与失踪货物交割的旧港口。",
+      "tags": ["重逢", "证据", "旧港口"],
+      "content": [
+        { "key": "risk", "value": "容易留下可被拍到的证据" }
+      ],
+      "createdAt": 1713376860000,
+      "updatedAt": 1713376860000
+    },
+    {
+      "id": "atom-zhou-lin",
+      "type": "character",
+      "name": "周临",
+      "description": "白槿公开场合必须保持合作、私下却不能完全信任的关键人物。",
+      "tags": ["盟友", "审查", "危险关系"],
+      "content": [
+        { "key": "public_role", "value": "港务听证会主持人" },
+        { "key": "private_pressure", "value": "已掌握部分旧案线索" }
+      ],
+      "createdAt": 1713377200000,
+      "updatedAt": 1713377200000
+    }
+  ],
+  "works": [
+    {
+      "id": "work-rain-reunion",
+      "title": "雨夜重逢",
+      "content": "白槿在雨夜码头见到了七年前失踪的人，对方带来一只沾血的防水档案袋，却没有解释自己为何还活着。",
+      "atomIds": ["atom-bai-jin", "atom-rain-dock"],
+      "createdAt": 1713377100000
+    },
+    {
+      "id": "work-missing-evidence",
+      "title": "听证会前夜的缺口",
+      "content": "白槿意识到那只档案袋里缺了一页最关键的签字记录，而周临已经开始追问她为何提前知道听证会名单。",
+      "atomIds": ["atom-bai-jin", "atom-rain-dock", "atom-zhou-lin"],
+      "createdAt": 1713378600000
+    }
+  ],
+  "session": {
+    "activeConversationId": "session-followup",
+    "recentUserMessages": [
+      "很好，现在不要重写第一条了，继续往后推。",
+      "我想看白槿在公开场合第一次差点失控。"
+    ],
+    "recentAssistantMessages": [
+      "那下一步可以把周临和听证会一起拉进来，让代价更公开。"
+    ],
+    "recentViewedAtomIds": ["atom-bai-jin", "atom-zhou-lin"],
+    "recentViewedWorkIds": ["work-missing-evidence"],
+    "recentCreatedAtomIds": ["atom-zhou-lin"],
+    "recentCreatedWorkIds": ["work-missing-evidence"]
+  }
+}

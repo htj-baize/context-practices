@@ -37,3 +37,12 @@
   - real recommendation feed ingestion, context-driven rerank, and explainable next-collection recommendation
 - current status:
   - executable
+
+### 5. Neta Studio Continuation Engine
+
+- case directory:
+  - [`cases/neta-studio-continuation-engine/`](../cases/neta-studio-continuation-engine)
+- focus:
+  - real `neta-studio` world context assembly, continuation validity, offer routing, and execution request composition
+- current status:
+  - definition

@@ -1,0 +1,40 @@
+{
+  "worldId": "world-white-jin-diplomat",
+  "contextKind": "studio_continuation_context",
+  "runtimeHost": "neta-studio",
+  "worldName": "白槿的灰幕外交局",
+  "focus": {
+    "activeConversationId": "session-current",
+    "recentViewedAtomIds": [
+      "atom-bai-jin"
+    ],
+    "recentViewedWorkIds": [
+      "work-rain-reunion"
+    ],
+    "recentCreatedAtomIds": [
+      "atom-bai-jin"
+    ],
+    "recentCreatedWorkIds": [
+      "work-rain-reunion"
+    ]
+  },
+  "worldState": {
+    "atomCount": 2,
+    "workCount": 1,
+    "coreConflict": "白槿必须在维持合法身份与掩盖旧案牵连之间继续周旋。",
+    "tone": "dangerous, intimate, restrained"
+  },
+  "recentIntent": {
+    "userMessages": [
+      "先不要开大世界，先围绕白槿继续做。",
+      "我想看她第一次露出破绽的场面。"
+    ],
+    "assistantMessages": [
+      "可以把焦点放在雨夜码头之后留下的后果。"
+    ]
+  },
+  "continuationReadiness": {
+    "ready": true,
+    "reason": "world already contains a first work and can support continuation routing"
+  }
+}
