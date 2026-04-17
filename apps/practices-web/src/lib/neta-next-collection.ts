@@ -22,6 +22,9 @@ export type NetaCollectionProfile = {
   concept_labels?: string[];
   format_labels?: string[];
   semantic_tokens?: string[];
+  like_status?: string;
+  favor_status?: string;
+  like_count?: number;
   source_feed_item?: {
     recall_sources?: string[];
     recall_type?: string;
@@ -50,6 +53,7 @@ export type NetaRecommendationArtifact = {
     candidate_count?: number;
     current_seed_mode?: string;
     top_candidate_confidence?: string;
+    feed_page_count?: number;
     llm_rerank?: {
       confidence?: string;
       reason_summary?: string;

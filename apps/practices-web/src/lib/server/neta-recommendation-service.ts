@@ -137,6 +137,9 @@ type FeedCollection = {
   creator: JsonObject;
   recall_sources: string[];
   recall_type: string;
+  like_status: string;
+  favor_status: string;
+  like_count: number;
   seed_list_item?: JsonObject;
 };
 
@@ -168,6 +171,7 @@ export type NetaSessionRequest = {
   likedCollectionUuids?: string[];
   dismissedCollectionUuids?: string[];
   seenCollectionUuids?: string[];
+  feedPageCount?: number;
 };
 
 export type NetaSessionResponse = {
@@ -179,8 +183,85 @@ export type NetaSessionResponse = {
     likedCollectionUuids: string[];
     dismissedCollectionUuids: string[];
     seenCollectionUuids: string[];
+    feedPageCount?: number;
   };
 };
+
+export type NetaBootstrapResponse = {
+  current: NetaCollectionProfile;
+  normalized: NetaNormalizedFeedArtifact;
+  recommendation: NetaRecommendationArtifact;
+};
+
+export type NetaCommunityFeedRequest = {
+  theme?: string;
+  pageIndex?: number;
+  pageSize?: number;
+};
+
+export type NetaCommunityFeedResponse = {
+  items: NetaCollectionProfile[];
+  pageIndex: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  theme: string;
+};
+
+export type NetaCommunityDetailRequest = {
+  uuid: string;
+};
+
+export type NetaCommunityLikeRequest = {
+  uuid: string;
+  isCancel?: boolean;
+};
+
+export type NetaCommunityLikeResponse = {
+  success: boolean;
+  message: string;
+  uuid: string;
+  isCancel: boolean;
+};
+
+function buildPreviewProfile(feedItem: FeedCollection): NetaCollectionProfile {
+  const ctaInfo = isRecord(feedItem.cta_info) ? feedItem.cta_info : {};
+  const briefInput =
+    isRecord(ctaInfo.launch_prompt) && typeof ctaInfo.launch_prompt.brief_input === "string"
+      ? ctaInfo.launch_prompt.brief_input
+      : typeof ctaInfo.brief_input === "string"
+        ? ctaInfo.brief_input
+        : "";
+
+  const contentTags = feedItem.tags.filter((tag) => !isCommunityTag(tag) && !isLowSignalTag(tag)).slice(0, 6);
+  const communityTags = feedItem.tags.filter((tag) => isCommunityTag(tag) && !isLowSignalTag(tag)).slice(0, 6);
+
+  return {
+    uuid: feedItem.uuid,
+    title: feedItem.name,
+    description: feedItem.description,
+    creator_name: isRecord(feedItem.creator) && typeof feedItem.creator.nick_name === "string" ? feedItem.creator.nick_name : "",
+    cover_url: feedItem.cover_url,
+    collection_link: collectionLink(feedItem.uuid),
+    content_tags: contentTags,
+    community_tags: communityTags,
+    cta_info: {
+      brief_input: briefInput,
+    },
+    interaction_flags: unique([feedItem.is_interactive ? "interactive" : "", feedItem.has_video ? "video" : ""].filter(Boolean)),
+    theme_labels: [],
+    intent_labels: [],
+    concept_labels: [],
+    format_labels: unique([feedItem.is_interactive ? "interactive" : "", feedItem.has_video ? "video" : ""].filter(Boolean)),
+    semantic_tokens: tokenize(`${feedItem.name} ${feedItem.description}`),
+    like_status: feedItem.like_status,
+    favor_status: feedItem.favor_status,
+    like_count: feedItem.like_count,
+    source_feed_item: {
+      recall_sources: feedItem.recall_sources,
+      recall_type: feedItem.recall_type,
+    },
+  };
+}
 
 type RecommendationLogContext = {
   requestId: string;
@@ -387,6 +468,9 @@ function extractFeedCollections(payload: JsonObject, sourceName: string): FeedCo
       creator,
       recall_sources: [sourceName],
       recall_type: typeof data.recall_type === "string" ? data.recall_type : "",
+      like_status: typeof data.likeStatus === "string" ? data.likeStatus : "",
+      favor_status: typeof data.favorStatus === "string" ? data.favorStatus : "",
+      like_count: typeof data.likeCount === "number" ? data.likeCount : 0,
     });
   }
   return collections;
@@ -526,6 +610,24 @@ function buildCollectionProfile(feedItem: FeedCollection, detailPayload: JsonObj
     concept_labels: deriveConceptLabels(fullText),
     format_labels: formatLabels,
     semantic_tokens: semanticTokens,
+    like_status:
+      typeof collection.likeStatus === "string"
+        ? collection.likeStatus
+        : typeof seedListItem.likeStatus === "string"
+          ? seedListItem.likeStatus
+          : feedItem.like_status,
+    favor_status:
+      typeof collection.favorStatus === "string"
+        ? collection.favorStatus
+        : typeof seedListItem.favorStatus === "string"
+          ? seedListItem.favorStatus
+          : feedItem.favor_status,
+    like_count:
+      typeof collection.likeCount === "number"
+        ? collection.likeCount
+        : typeof seedListItem.likeCount === "number"
+          ? seedListItem.likeCount
+          : feedItem.like_count,
     source_feed_item: {
       recall_sources: feedItem.recall_sources,
       recall_type: feedItem.recall_type,
@@ -566,6 +668,9 @@ function buildDetailSeedFeedItem(detailPayload: JsonObject): FeedCollection {
     creator: isRecord(collection.creator) ? collection.creator : {},
     recall_sources: ["seed"],
     recall_type: "seed",
+    like_status: typeof collection.likeStatus === "string" ? collection.likeStatus : "",
+    favor_status: typeof collection.favorStatus === "string" ? collection.favorStatus : "",
+    like_count: typeof collection.likeCount === "number" ? collection.likeCount : 0,
   };
 }
 
@@ -587,6 +692,9 @@ function buildSeedFeedItemFromListItem(listItem: JsonObject): FeedCollection {
     },
     recall_sources: ["seed"],
     recall_type: "seed",
+    like_status: typeof listItem.likeStatus === "string" ? listItem.likeStatus : "",
+    favor_status: typeof listItem.favorStatus === "string" ? listItem.favorStatus : "",
+    like_count: typeof listItem.likeCount === "number" ? listItem.likeCount : 0,
     seed_list_item: listItem,
   };
 }
@@ -802,6 +910,157 @@ async function buildProfileFromUuid(uuid: string): Promise<NetaCollectionProfile
   return buildCollectionProfile(buildDetailSeedFeedItem(detail), detail);
 }
 
+export async function getLiveNetaCommunityFeed(
+  request: NetaCommunityFeedRequest = {}
+): Promise<NetaCommunityFeedResponse> {
+  const theme = request.theme?.trim() || "热门";
+  const pageIndex = Math.max(0, request.pageIndex ?? 0);
+  const pageSize = Math.max(1, Math.min(request.pageSize ?? 12, 24));
+  const payload = await safeRunNetaJsonCommand([
+    "request_community_feed",
+    "--theme",
+    theme,
+    "--page_index",
+    String(pageIndex),
+    "--page_size",
+    String(pageSize),
+  ]);
+
+  if (!payload) {
+    throw new Error(`Unable to load community feed: ${theme}`);
+  }
+
+  const items = extractFeedCollections(payload, `community_${theme}`).map((item) => buildPreviewProfile(item));
+  const pageData = isRecord(payload.page_data) ? payload.page_data : {};
+
+  return {
+    items,
+    pageIndex,
+    pageSize,
+    hasNextPage: Boolean(pageData.has_next_page),
+    theme,
+  };
+}
+
+export async function getLiveNetaCommunityDetail(
+  request: NetaCommunityDetailRequest
+): Promise<NetaCollectionProfile> {
+  if (!request.uuid?.trim()) {
+    throw new Error("Missing collection uuid");
+  }
+
+  const profile = await buildProfileFromUuid(request.uuid.trim());
+  if (!profile) {
+    throw new Error(`Unable to load community collection detail: ${request.uuid}`);
+  }
+
+  return profile;
+}
+
+export async function commitLiveNetaCommunityLike(
+  request: NetaCommunityLikeRequest
+): Promise<NetaCommunityLikeResponse> {
+  const uuid = request.uuid?.trim();
+  if (!uuid) {
+    throw new Error("Missing collection uuid");
+  }
+
+  const args = ["like_collection", "--uuid", uuid];
+  if (request.isCancel) {
+    args.push("--is_cancel", "true");
+  }
+
+  const payload = await safeRunNetaJsonCommand(args);
+  if (!payload) {
+    throw new Error(`${request.isCancel ? "Unlike" : "Like"} collection failed: ${uuid}`);
+  }
+
+  const success = payload.success === true;
+  const message =
+    typeof payload.message === "string"
+      ? payload.message
+      : success
+        ? request.isCancel
+          ? "unliked success"
+          : "liked success"
+        : `${request.isCancel ? "Unlike" : "Like"} collection failed`;
+
+  if (!success) {
+    throw new Error(message);
+  }
+
+  return {
+    success,
+    message,
+    uuid,
+    isCancel: Boolean(request.isCancel),
+  };
+}
+
+export async function getInitialNetaRecommendationBootstrap(
+  request: Pick<NetaSessionRequest, "currentCollectionUuid" | "currentSource"> = {}
+): Promise<NetaBootstrapResponse> {
+  const seed = await resolveSeedCollectionUuid(request);
+  let currentProfile: NetaCollectionProfile | null = null;
+
+  if (seed.uuid) {
+    if (seed.listItem) {
+      const detail = await safeReadCollection(seed.uuid);
+      if (detail) {
+        currentProfile = buildCollectionProfile(buildSeedFeedItemFromListItem(seed.listItem), detail);
+      }
+    }
+
+    if (!currentProfile) {
+      currentProfile = await buildProfileFromUuid(seed.uuid);
+    }
+  }
+
+  if (!currentProfile) {
+    throw new Error("Unable to resolve initial Neta seed");
+  }
+
+  return {
+    current: currentProfile,
+    normalized: {
+      current_collection: currentProfile,
+      candidate_collections: [],
+      candidate_count: 0,
+      recall_summary: {
+        sources: { bootstrap: 1 },
+        merged_candidate_count: 0,
+        search_queries: [],
+      },
+    },
+    recommendation: {
+      case_id: "neta-next-collection-recommendation",
+      status: "bootstrap",
+      current_collection_uuid: currentProfile.uuid,
+      current_collection_title: currentProfile.title,
+      current_collection_cover_url: currentProfile.cover_url,
+      current_collection_link: currentProfile.collection_link,
+      recommended_collection_uuid: "",
+      recommended_collection_title: "",
+      recommended_collection_cover_url: "",
+      recommended_collection_link: "",
+      recommendation_reason: "",
+      explanation: {
+        summary: "Bootstrap current seed only. Recommendation queue loads asynchronously after page mount.",
+        reason_lines: [],
+      },
+      evidence: {
+        source: "neta_bootstrap",
+        selection_rule: "latest_liked_seed_only",
+        candidate_count: 0,
+        current_seed_mode: seed.source,
+        top_candidate_confidence: "pending",
+        feed_page_count: 0,
+      },
+      fallback_candidates: [],
+    },
+  };
+}
+
 export async function getLiveNetaRecommendationSession(
   request: NetaSessionRequest = {}
 ): Promise<NetaSessionResponse> {
@@ -810,6 +1069,7 @@ export async function getLiveNetaRecommendationSession(
   try {
     const likedCollectionUuids = unique(request.likedCollectionUuids ?? []);
     const dismissedCollectionUuids = unique(request.dismissedCollectionUuids ?? []);
+    const feedPageCount = Math.max(1, Math.min(request.feedPageCount ?? 2, 6));
     const seenCollectionUuids = unique([
       ...(request.seenCollectionUuids ?? []),
       ...likedCollectionUuids,
@@ -824,19 +1084,21 @@ export async function getLiveNetaRecommendationSession(
       likedCount: likedCollectionUuids.length,
       dismissedCount: dismissedCollectionUuids.length,
       seenCount: seenCollectionUuids.length,
+      feedPageCount,
     });
 
     stage = "resolve_seed";
     const seed = await resolveSeedCollectionUuid(request);
 
     stage = "load_interactive";
-    const interactiveCollections = await loadFeedPages(["request_interactive_feed"], "interactive");
+    const interactiveCollections = await loadFeedPages(["request_interactive_feed"], "interactive", feedPageCount);
     logInfo("interactive feed loaded", {
       requestId,
       stage,
       seedUuid: seed.uuid,
       seedSource: seed.source,
       interactiveCount: interactiveCollections.length,
+      feedPageCount,
     });
 
     stage = "resolve_current";
@@ -890,9 +1152,9 @@ export async function getLiveNetaRecommendationSession(
     stage = "load_recall";
     const recallCollections = [
       ...interactiveCollections,
-      ...(await loadFeedPages(["request_community_feed", "--theme", "热门"], "community_hot", 1)),
-      ...(await loadFeedPages(["request_community_feed", "--theme", "最新"], "community_latest", 1)),
-      ...(await loadFeedPages(["request_community_feed", "--theme", "关注"], "community_following", 1)),
+      ...(await loadFeedPages(["request_community_feed", "--theme", "热门"], "community_hot", Math.max(1, Math.ceil(feedPageCount / 2)))),
+      ...(await loadFeedPages(["request_community_feed", "--theme", "最新"], "community_latest", Math.max(1, Math.ceil(feedPageCount / 2)))),
+      ...(await loadFeedPages(["request_community_feed", "--theme", "关注"], "community_following", Math.max(1, Math.ceil(feedPageCount / 2)))),
     ];
 
     for (const query of searchQueries) {
@@ -908,7 +1170,7 @@ export async function getLiveNetaRecommendationSession(
 
     const mergedRecallCollections = mergeFeedCollections(recallCollections);
     const excluded = new Set([currentProfile.uuid, ...seenCollectionUuids]);
-    const candidateFeedItems = mergedRecallCollections.filter((item) => !excluded.has(item.uuid)).slice(0, 18);
+    const candidateFeedItems = mergedRecallCollections.filter((item) => !excluded.has(item.uuid)).slice(0, Math.max(18, feedPageCount * 12));
     logInfo("recall prepared", {
       requestId,
       stage,
@@ -995,6 +1257,7 @@ export async function getLiveNetaRecommendationSession(
         candidate_count: candidateProfiles.length,
         current_seed_mode: seed.source,
         top_candidate_confidence: recommended?.confidence ?? "low",
+        feed_page_count: feedPageCount,
       },
       fallback_candidates: fallbacks.map((item) => ({
         uuid: item.uuid,
@@ -1022,6 +1285,7 @@ export async function getLiveNetaRecommendationSession(
         likedCollectionUuids,
         dismissedCollectionUuids,
         seenCollectionUuids: unique([currentProfile.uuid, ...seenCollectionUuids]),
+        feedPageCount,
       },
     };
   } catch (error) {

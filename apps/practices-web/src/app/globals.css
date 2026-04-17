@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --background-soft: #f1f5f9;
-  --background-elevated: #ffffff;
-  --foreground: #0f172a;
-  --muted: rgba(15, 23, 42, 0.62);
-  --panel: rgba(255, 255, 255, 0.9);
+  --background: #07111a;
+  --background-soft: #08131d;
+  --background-elevated: #0d1824;
+  --foreground: #f8fafc;
+  --muted: rgba(226, 232, 240, 0.68);
+  --panel: rgba(8, 19, 29, 0.82);
   --accent: #10b981;
-  --accent-2: #4f46e5;
-  --border: rgba(148, 163, 184, 0.24);
+  --accent-2: #60a5fa;
+  --border: rgba(148, 163, 184, 0.16);
 }
 
 * {
@@ -25,8 +25,8 @@ body {
 body {
   color: var(--foreground);
   background:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.05), transparent 24%),
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 22%),
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.14), transparent 22%),
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 24%),
     linear-gradient(180deg, var(--background-soft) 0%, var(--background) 72%);
   font-family: "Manrope", "SF Pro Text", system-ui, sans-serif;
   font-size: 15px;
@@ -60,7 +60,7 @@ button {
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
   border: 2px solid transparent;
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(148, 163, 184, 0.3);
   background-clip: padding-box;
 }
 
@@ -69,5 +69,5 @@ button {
 }
 
 ::selection {
-  background: rgba(79, 70, 229, 0.18);
+  background: rgba(16, 185, 129, 0.24);
 }

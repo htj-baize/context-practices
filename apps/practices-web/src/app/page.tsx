@@ -5,14 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { listPracticeCases } from "@/lib/cases";
 
 const CASES = listPracticeCases();
-const FEATURED_CASE = CASES.find((item) => item.slug === "neta-next-collection-recommendation") ?? CASES[0];
+const UNIFIED_ROUTE = {
+  href: "/neta-next-collection-recommendation-unified",
+  title: "Neta Next Collection Unified",
+  summary: "Single-page dark surface: vertical Feed browsing plus horizontal Next decision flow.",
+};
 
 export default function HomePage() {
   return (
     <main className="min-h-screen px-4 py-5 sm:px-7 sm:py-7 lg:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:gap-7">
         <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-          <Card className="overflow-hidden border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))]">
+          <Card className="overflow-hidden border-white/12 bg-[linear-gradient(180deg,rgba(8,19,29,0.96),rgba(8,19,29,0.82))] shadow-[0_24px_80px_rgba(8,19,29,0.32)]">
             <CardHeader className="gap-5 p-6 sm:p-8">
               <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/66">
                 <Layers3 className="h-3.5 w-3.5" />
@@ -20,7 +24,7 @@ export default function HomePage() {
               </div>
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
                 <div className="max-w-3xl space-y-4">
-                  <CardTitle className="text-3xl leading-tight sm:text-5xl">
+                  <CardTitle className="text-3xl leading-tight text-white sm:text-5xl">
                     One shell for practice validation, with case UIs plugged in where they matter.
                   </CardTitle>
                   <CardDescription className="max-w-2xl text-base text-white/72 sm:text-lg">
@@ -31,18 +35,14 @@ export default function HomePage() {
                 <div className="grid gap-3">
                   <div className="rounded-[1.75rem] border border-white/10 bg-[#08131d]/72 p-4">
                     <div className="text-[11px] uppercase tracking-[0.18em] text-white/46">Featured Route</div>
-                    <div className="mt-2 text-lg font-semibold text-white">{FEATURED_CASE?.title ?? "No featured case"}</div>
-                    <div className="mt-2 text-sm leading-6 text-white/66">
-                      {FEATURED_CASE?.summary ?? "Add a case route to promote it here."}
-                    </div>
-                    {FEATURED_CASE ? (
-                      <Button asChild className="mt-4 w-full">
-                        <Link href={`/${FEATURED_CASE.slug}`}>
-                          Open Demo
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    ) : null}
+                    <div className="mt-2 text-lg font-semibold text-white">{UNIFIED_ROUTE.title}</div>
+                    <div className="mt-2 text-sm leading-6 text-white/66">{UNIFIED_ROUTE.summary}</div>
+                    <Button asChild className="mt-4 w-full">
+                      <Link href={UNIFIED_ROUTE.href}>
+                        Open Demo
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="rounded-[1.4rem] border border-white/10 bg-white/4 px-4 py-3">
@@ -61,14 +61,14 @@ export default function HomePage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3 px-6 pb-6 sm:px-8 sm:pb-8">
+            <CardContent className="flex flex-wrap items-center gap-3 border-t border-white/8 px-6 pt-5 pb-6 sm:px-8 sm:pt-5 sm:pb-8">
               <Button asChild>
                 <Link href="#cases">
                   Browse Cases
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="secondary">
+              <Button asChild variant="secondary" className="border border-white/10 bg-white/6 text-white hover:bg-white/10">
                 <Link href="https://github.com/talesofai/neta-studio" target="_blank" rel="noreferrer">
                   Reference Stack
                 </Link>
@@ -79,8 +79,8 @@ export default function HomePage() {
           <div className="grid gap-5">
             <Card className="border-white/10 bg-[#08131d]/72">
               <CardHeader>
-                <CardTitle className="text-base">Chosen Stack</CardTitle>
-                <CardDescription>Next.js + React + Tailwind v4 + shadcn-style UI primitives.</CardDescription>
+                <CardTitle className="text-base text-white">Chosen Stack</CardTitle>
+                <CardDescription className="text-white/62">Next.js + React + Tailwind v4 + shadcn-style UI primitives.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
                 {["Next 16", "React 19", "Tailwind 4", "shadcn/ui", "Zustand", "React Query"].map((item) => (
@@ -95,8 +95,8 @@ export default function HomePage() {
             </Card>
             <Card className="border-white/10 bg-[#08131d]/72">
               <CardHeader>
-                <CardTitle className="text-base">Rules</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-base text-white">Rules</CardTitle>
+                <CardDescription className="text-white/62">
                   Case logic stays in its own directory. This shell consumes outputs and adds shared interaction patterns.
                 </CardDescription>
               </CardHeader>
@@ -121,7 +121,7 @@ export default function HomePage() {
                 <Sparkles className="h-3.5 w-3.5" />
                 Shell Goals
               </div>
-              <CardTitle className="text-2xl">What this web layer should do</CardTitle>
+              <CardTitle className="text-2xl text-white">What this web layer should do</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm leading-6 text-white/70">
               <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.035] p-4">
@@ -138,9 +138,9 @@ export default function HomePage() {
 
           <Card className="border-white/10 bg-[#08131d]/72">
             <CardHeader className="pb-4">
-              <CardTitle className="text-2xl">Current focus</CardTitle>
-              <CardDescription>
-                The first polished route is the Neta next-collection recommendation demo. Other cases remain shell entries until they get dedicated presenters.
+              <CardTitle className="text-2xl text-white">Current focus</CardTitle>
+              <CardDescription className="text-white/62">
+                The current top-level validation entry is the unified Neta next-collection route. Legacy routes stay available below for side-by-side comparison.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -194,14 +194,14 @@ export default function HomePage() {
                       </span>
                     )}
                   </div>
-                  <CardTitle>{item.title}</CardTitle>
-                  <CardDescription>{item.summary}</CardDescription>
+                  <CardTitle className="text-white">{item.title}</CardTitle>
+                  <CardDescription className="text-white/62">{item.summary}</CardDescription>
                 </CardHeader>
                 <CardContent className="mt-auto flex items-center justify-between gap-4">
                   <span className="text-xs text-white/50">
-                    {item.slug === FEATURED_CASE?.slug ? "featured route" : item.hasDemo ? "legacy demo present" : "shell route pending"}
+                    {item.hasDemo ? "legacy demo present" : "shell route pending"}
                   </span>
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline" size="sm" className="border-white/10 bg-white/6 text-white hover:bg-white/10">
                     <Link href={`/${item.slug}`}>Open Route</Link>
                   </Button>
                 </CardContent>
