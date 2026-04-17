@@ -218,7 +218,11 @@ function OffersPanel({ fixture }: { fixture: ContinuationFixtureViewModel }) {
         {fixture.offers.map((offer, index) => (
           <Card
             key={offer.id}
-            className={index === 0 ? "border-emerald-400/20 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(8,19,29,0.82))]" : "border-white/10 bg-[#08131d]/72"}
+            className={
+              index === 0
+                ? "border-emerald-400/18 bg-[linear-gradient(180deg,rgba(16,185,129,0.06),rgba(8,19,29,0.94))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                : "border-white/10 bg-[#08131d]/72"
+            }
           >
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
@@ -335,7 +339,11 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
     <main className="min-h-screen px-4 py-5 sm:px-7 sm:py-7 lg:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button asChild variant="secondary" className="w-fit">
+          <Button
+            asChild
+            variant="outline"
+            className="w-fit border-white/10 bg-white/6 text-white hover:bg-white/10 hover:text-white"
+          >
             <Link href="/">
               <ArrowLeft className="h-4 w-4" />
               Back

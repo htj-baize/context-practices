@@ -20,11 +20,6 @@ export default async function CasePage({ params }: PageProps) {
     notFound();
   }
 
-  const hasDedicatedPresenter = [
-    "neta-next-collection-recommendation",
-    "neta-studio-continuation-engine",
-  ].includes(item.slug);
-
   return (
     <main className="min-h-screen px-4 py-5 sm:px-7 sm:py-7 lg:px-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-5">
@@ -64,10 +59,10 @@ export default async function CasePage({ params }: PageProps) {
               <div className="rounded-[1.75rem] border border-white/10 bg-[#08131d]/72 p-4">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/44">Route Status</div>
                 <div className="mt-2 text-lg font-semibold text-white">
-                  {hasDedicatedPresenter ? "Dedicated presenter live" : "Shared shell entry"}
+                  {item.hasDedicatedPresenter ? "Dedicated presenter live" : "Shared shell entry"}
                 </div>
                 <div className="mt-2 text-sm leading-6 text-white/64">
-                  {hasDedicatedPresenter
+                  {item.hasDedicatedPresenter
                     ? "This case already has a focused interactive validation page."
                     : "This route is ready for a case-specific presenter once the data adapter is defined."}
                 </div>
@@ -80,7 +75,7 @@ export default async function CasePage({ params }: PageProps) {
                 <CardTitle className="text-base">Current status</CardTitle>
               </CardHeader>
               <CardContent className="text-sm leading-6 text-white/70">
-                {hasDedicatedPresenter
+                {item.hasDedicatedPresenter
                   ? "This route already acts as the reference interactive presenter for the shell."
                   : "This route is ready as the dedicated shell entry for this case, but its custom interactive UI is not wired yet."}
               </CardContent>

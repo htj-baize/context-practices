@@ -6,11 +6,15 @@ export type PracticeCaseSummary = {
   title: string;
   summary: string;
   tags: string[];
-  hasDemo: boolean;
+  hasDedicatedPresenter: boolean;
   readmePath: string;
 };
 
 const CASES_ROOT = path.resolve(process.cwd(), "..", "..", "cases");
+const DEDICATED_ROUTE_SLUGS = new Set([
+  "neta-next-collection-recommendation",
+  "neta-studio-continuation-engine",
+]);
 
 function inferSummary(slug: string, readme: string): PracticeCaseSummary {
   const lines = readme
@@ -37,7 +41,8 @@ function inferSummary(slug: string, readme: string): PracticeCaseSummary {
     title,
     summary,
     tags,
-    hasDemo: existsSync(path.join(CASES_ROOT, slug, "demo")),
+    hasDedicatedPresenter:
+      DEDICATED_ROUTE_SLUGS.has(slug) || existsSync(path.join(CASES_ROOT, slug, "demo")),
     readmePath: path.join(CASES_ROOT, slug, "README.md"),
   };
 }
@@ -55,4 +60,3 @@ export function listPracticeCases(): PracticeCaseSummary[] {
     })
     .sort((left, right) => left.slug.localeCompare(right.slug));
 }
-
