@@ -78,9 +78,9 @@ function SourceList({ title, items }: { title: string; items: string[] }) {
       <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">{title}</div>
       <div className="flex flex-wrap gap-2">
         {items.length ? (
-          items.map((item) => (
+          items.map((item, index) => (
             <span
-              key={`${title}-${item}`}
+              key={`${title}-${item}-${index}`}
               className="rounded-full border border-sky-400/18 bg-sky-400/10 px-2.5 py-1 text-xs text-sky-100"
             >
               {item}
