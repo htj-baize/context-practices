@@ -9,7 +9,25 @@ PRIMARY_BIN="${REPO_DIR}/bin/cli.js"
 SECONDARY_BIN="${REPO_DIR}/node_modules/.bin/neta-cli"
 FALLBACK_BIN="${REPO_DIR}/node_modules/.bin/skills-ref"
 LOCAL_CONFIG_DIR="${CASE_DIR}/.local/config"
-ROOT_ENV_FILE="${ROOT_DIR}/context-practices/.env.local"
+
+resolve_root_env_file() {
+  local candidates=(
+    "${ROOT_DIR}/.env.local"
+    "${ROOT_DIR}/context-practices/.env.local"
+    "/Users/joany/Desktop/baize/one-river/context-practices/.env.local"
+    "${CASE_DIR}/.env.local"
+  )
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if [[ -f "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+ROOT_ENV_FILE="$(resolve_root_env_file || true)"
 
 if [[ ! -d "${REPO_DIR}" ]]; then
   echo "Vendored Neta repo is not installed." >&2
@@ -35,7 +53,7 @@ export NETA_CONFIG_DIR="${NETA_CONFIG_DIR:-${LOCAL_CONFIG_DIR}}"
 # (for example `next dev`) is running with NODE_ENV=development.
 export NODE_ENV="${NETA_CLI_NODE_ENV:-production}"
 
-if [[ -f "${ROOT_ENV_FILE}" ]]; then
+if [[ -n "${ROOT_ENV_FILE}" && -f "${ROOT_ENV_FILE}" ]]; then
   set -a
   # shellcheck disable=SC1090
   source "${ROOT_ENV_FILE}"

@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import type {
@@ -8,14 +9,26 @@ import type {
 } from "@/lib/neta-next-collection";
 
 const execFileAsync = promisify(execFile);
+const CASE_SLUG = "neta-next-collection-recommendation";
 
-const CASE_ROOT = path.resolve(
-  process.cwd(),
-  "..",
-  "..",
-  "cases",
-  "neta-next-collection-recommendation"
-);
+function resolveCaseRoot(): string {
+  const candidates = [
+    "/Users/joany/Desktop/baize/one-river/context-practices/cases/neta-next-collection-recommendation",
+    path.resolve(process.cwd(), "..", "..", "..", "..", "..", "..", "context-practices", "cases", CASE_SLUG),
+    path.resolve(process.cwd(), "..", "..", "..", "..", "cases", CASE_SLUG),
+    path.resolve(process.cwd(), "..", "..", "cases", CASE_SLUG),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "scripts", "neta-local"))) {
+      return candidate;
+    }
+  }
+
+  return candidates[0];
+}
+
+const CASE_ROOT = resolveCaseRoot();
 const NETA_BIN = path.join(CASE_ROOT, "scripts", "neta-local");
 
 const RECALL_SOURCE_WEIGHTS: Record<string, number> = {
