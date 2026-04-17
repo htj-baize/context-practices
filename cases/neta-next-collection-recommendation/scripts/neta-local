@@ -31,6 +31,10 @@ fi
 mkdir -p "${LOCAL_CONFIG_DIR}"
 export NETA_CONFIG_DIR="${NETA_CONFIG_DIR:-${LOCAL_CONFIG_DIR}}"
 
+# Force the vendored CLI into machine-readable mode even when the parent process
+# (for example `next dev`) is running with NODE_ENV=development.
+export NODE_ENV="${NETA_CLI_NODE_ENV:-production}"
+
 if [[ -f "${ROOT_ENV_FILE}" ]]; then
   set -a
   # shellcheck disable=SC1090
