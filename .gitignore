@@ -5,5 +5,7 @@ node_modules
 apps/*/node_modules
 apps/*/.next
 apps/*/out
+*.tsbuildinfo
+apps/*/tsconfig.tsbuildinfo
 dist
 .env.local
