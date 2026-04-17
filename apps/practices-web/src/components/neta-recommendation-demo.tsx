@@ -1,14 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  Bot,
   ExternalLink,
   Heart,
+  LayoutPanelLeft,
   Layers3,
+  PanelRightClose,
+  PanelRightOpen,
+  Radar,
   RotateCcw,
   Sparkles,
+  Target,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,9 +47,12 @@ type QueueEntry = {
   };
 };
 
-type ActiveTab = "current" | "next" | "queue";
+type MainTab = "next" | "queue" | "current";
+type SideTab = "summary" | "session" | "explain";
+type NextPanelTab = "reason" | "overlap" | "current";
 
 type SheetState = {
+  label: string;
   title: string;
   summary: string;
   chips: string[];
@@ -198,36 +208,93 @@ function topSignals(items: NetaCollectionProfile[]) {
 
 function SignalChip({ label }: { label: string }) {
   return (
-    <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs text-white/72">{label}</span>
+    <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] text-slate-300">{label}</span>
   );
 }
 
 function StatTile({ label, value, accent = false }: { label: string; value: string | number; accent?: boolean }) {
   return (
     <div
-      className={`min-w-0 rounded-2xl border px-3 py-3 ${accent ? "border-emerald-400/20 bg-emerald-400/10" : "border-white/8 bg-white/4"}`}
+      className={`min-w-0 rounded-2xl border px-3 py-3 ${
+        accent ? "border-emerald-400/18 bg-emerald-400/[0.08]" : "border-white/8 bg-white/[0.03]"
+      }`}
     >
-      <div className="text-[11px] uppercase tracking-[0.18em] text-white/44">{label}</div>
-      <div className="mt-2 line-clamp-2 break-words text-base font-semibold text-white">{value}</div>
+      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</div>
+      <div className="mt-2 line-clamp-2 break-words text-sm font-semibold text-white">{value}</div>
     </div>
   );
 }
 
 function CollectionCover({ item }: { item: NetaCollectionProfile }) {
   return (
-    <div className="relative aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-white/6">
+    <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-slate-100">
       {item.cover_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img alt={item.title} className="h-full w-full object-cover" src={item.cover_url} />
       ) : (
         <div
-          className="flex h-full w-full items-end p-5 text-xl font-semibold text-white/88"
+          className="flex h-full w-full items-end p-5 text-base font-semibold text-white/88"
           style={{ background: coverFallback(item.title) }}
         >
           {item.title}
         </div>
       )}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#07111a]/65 via-transparent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/55 via-transparent to-transparent" />
+    </div>
+  );
+}
+
+function CompactCover({ item }: { item: NetaCollectionProfile }) {
+  return (
+    <div className="relative h-22 w-18 overflow-hidden rounded-2xl bg-slate-100 sm:h-24 sm:w-20">
+      {item.cover_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img alt={item.title} className="h-full w-full object-cover" src={item.cover_url} />
+      ) : (
+        <div className="h-full w-full" style={{ background: coverFallback(item.title) }} />
+      )}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/42 via-transparent to-transparent" />
+    </div>
+  );
+}
+
+function SpotlightCard({
+  eyebrow,
+  title,
+  subtitle,
+  item,
+  chips,
+  accent = false,
+  actions,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  item: NetaCollectionProfile;
+  chips: string[];
+  accent?: boolean;
+  actions?: ReactNode;
+}) {
+  return (
+    <div
+      className={`rounded-[1.6rem] border p-4 sm:p-5 ${
+        accent ? "border-emerald-400/18 bg-emerald-400/[0.08]" : "border-white/8 bg-white/[0.03]"
+      }`}
+    >
+      <div className="grid gap-4 sm:grid-cols-[88px_minmax(0,1fr)] sm:items-start">
+        <CompactCover item={item} />
+        <div className="grid gap-3">
+          <div className="space-y-2">
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-500">{eyebrow}</div>
+            <div className="text-base font-semibold leading-tight text-white sm:text-lg">{title}</div>
+            <p className="text-[13px] leading-6 text-slate-300">{subtitle}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {chips.length ? chips.map((chip) => <SignalChip key={chip} label={chip} />) : <SignalChip label="待补充信号" />}
+          </div>
+          {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -249,7 +316,7 @@ function CollectionCard({
 }) {
   const item = entry.candidate;
   return (
-    <Card className="overflow-hidden border-white/8 bg-[#08131d]/72">
+    <Card className="overflow-hidden border-white/8 bg-white/[0.04] shadow-none">
       <CardContent className={`grid gap-4 p-4 sm:p-5 ${compact ? "lg:grid-cols-[168px_minmax(0,1fr)] lg:items-start" : ""}`}>
         <div className={compact ? "lg:max-w-[168px]" : ""}>
           <CollectionCover item={item} />
@@ -261,8 +328,8 @@ function CollectionCard({
             <SignalChip label={(item.source_feed_item?.recall_sources ?? []).slice(0, 2).join(" / ") || "recall"} />
           </div>
           <div className="space-y-2">
-            <h3 className={`${compact ? "text-lg" : "text-xl"} font-semibold leading-tight text-white`}>{item.title}</h3>
-            <p className={`text-white/68 ${compact ? "line-clamp-2 text-sm leading-5" : "text-sm leading-6"}`}>{entry.reason}</p>
+            <h3 className={`${compact ? "text-base" : "text-lg"} font-semibold leading-tight text-white`}>{item.title}</h3>
+            <p className={`text-slate-300 ${compact ? "line-clamp-2 text-[13px] leading-5" : "text-[13px] leading-6"}`}>{entry.reason}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {unique([...(item.concept_labels ?? []), ...(item.intent_labels ?? []), ...(item.theme_labels ?? [])])
@@ -271,13 +338,13 @@ function CollectionCard({
                 <SignalChip key={chip} label={chip} />
               ))}
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-white/60">
+          <div className="flex flex-wrap gap-2 text-xs text-slate-400">
             {(item.interaction_flags ?? []).length > 0 ? <SignalChip label={`互动 ${(item.interaction_flags ?? []).join(" / ")}`} /> : null}
             {(item.content_tags ?? []).length > 0 ? <SignalChip label={`标签 ${(item.content_tags ?? []).slice(0, 2).join(" / ")}`} /> : null}
             {(item.community_tags ?? []).length > 0 ? <SignalChip label={`社区 ${(item.community_tags ?? []).slice(0, 2).join(" / ")}`} /> : null}
           </div>
           <div className={`grid gap-2 ${compact ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-2 sm:flex sm:flex-wrap"}`}>
-            <Button asChild variant="outline" className="border-white/12 bg-transparent text-white hover:bg-white/6">
+            <Button asChild variant="outline">
               <Link href={item.collection_link ?? "#"} rel="noreferrer" target="_blank">
                 <ExternalLink className="h-4 w-4" />
                 打开
@@ -317,14 +384,14 @@ function RankedQueueRow({
 }) {
   const item = entry.candidate;
   return (
-    <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-4 rounded-[1.4rem] border border-white/8 bg-white/[0.035] px-4 py-3 transition hover:bg-white/[0.055]">
+    <div className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-4 rounded-[1.4rem] border border-white/8 bg-white/[0.04] px-4 py-3 transition hover:bg-white/[0.06]">
       <div className="text-center">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-white/38">Rank</div>
-        <div className="mt-1 text-2xl font-semibold text-white">{index + 1}</div>
+        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Rank</div>
+        <div className="mt-1 text-xl font-semibold text-white">{index + 1}</div>
       </div>
       <div className="min-w-0 space-y-2">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/6">
+          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-slate-100">
             {item.cover_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img alt={item.title} className="h-full w-full object-cover" src={item.cover_url} />
@@ -333,8 +400,8 @@ function RankedQueueRow({
             )}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-base font-semibold text-white">{item.title}</div>
-            <div className="truncate text-sm text-white/58">{entry.reason}</div>
+            <div className="truncate text-sm font-semibold text-white">{item.title}</div>
+            <div className="truncate text-[13px] text-slate-400">{entry.reason}</div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -362,6 +429,106 @@ function RankedQueueRow({
   );
 }
 
+function RailButton({
+  active,
+  label,
+  hint,
+  icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  hint: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`w-full rounded-[1.15rem] border px-3 py-3 text-left transition ${
+        active
+          ? "border-emerald-400/40 bg-emerald-400/12 text-white shadow-[0_10px_30px_rgba(16,185,129,0.12)]"
+          : "border-white/8 bg-white/[0.03] text-slate-300 hover:border-white/12 hover:bg-white/[0.05]"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+            active ? "bg-emerald-400/18 text-emerald-200" : "bg-white/[0.05] text-slate-400"
+          }`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium">{label}</div>
+          <div className="mt-1 text-[12px] leading-5 text-slate-400">{hint}</div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function MinimalVisualCard({
+  eyebrow,
+  title,
+  item,
+  accent = false,
+  chips = [],
+  footer,
+  className = "",
+  overlayActions,
+}: {
+  eyebrow: string;
+  title: string;
+  item: NetaCollectionProfile;
+  accent?: boolean;
+  chips?: string[];
+  footer?: ReactNode;
+  className?: string;
+  overlayActions?: ReactNode;
+}) {
+  return (
+    <div
+      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.25rem] border ${
+        accent ? "border-emerald-400/18 bg-emerald-400/[0.08]" : "border-white/8 bg-white/[0.03]"
+      } ${className}`}
+    >
+      <Link href={item.collection_link ?? "#"} rel="noreferrer" target="_blank" className="group block flex-1">
+        <div className="relative h-full min-h-0 overflow-hidden bg-black/20">
+          {item.cover_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={item.title} className="h-full w-full object-cover" src={item.cover_url} />
+          ) : (
+            <div className="h-full w-full" style={{ background: coverFallback(item.title) }} />
+          )}
+          {chips.length ? (
+            <div className="absolute inset-x-0 top-0 z-10 p-3 opacity-100 transition md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
+              <div className="flex flex-wrap gap-2">
+                {chips.slice(0, 3).map((chip) => (
+                  <span key={chip} className="rounded-full border border-white/14 bg-[#07111a]/76 px-2.5 py-1 text-[11px] text-white/88 backdrop-blur-sm">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {overlayActions ? (
+            <div className="absolute inset-x-0 bottom-0 z-10 p-3 opacity-100 transition md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
+              <div className="flex items-center justify-end gap-2">{overlayActions}</div>
+            </div>
+          ) : null}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#07111a] via-[#07111a]/50 to-transparent p-3">
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{eyebrow}</div>
+            <div className="mt-2 line-clamp-2 text-[18px] font-semibold leading-tight text-white">{title}</div>
+          </div>
+        </div>
+      </Link>
+      {footer ? <div className="min-h-[52px] border-t border-white/8 p-3">{footer}</div> : null}
+    </div>
+  );
+}
+
 export function NetaRecommendationDemo({ current, normalized, recommendation }: DemoProps) {
   const items = useMemo(() => {
     const byId = new Map<string, NetaCollectionProfile>();
@@ -377,8 +544,13 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
   const [mobileDeckIndex, setMobileDeckIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("next");
+  const [mainTab, setMainTab] = useState<MainTab>("next");
+  const [sideTab, setSideTab] = useState<SideTab>("summary");
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [insightCollapsed, setInsightCollapsed] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [nextPanelTab, setNextPanelTab] = useState<NextPanelTab>("reason");
+  const dragStartX = useRef<number | null>(null);
 
   const currentItem = items.get(currentId) ?? current;
   const likedItems = likedIds.map((id) => items.get(id)).filter((item): item is NetaCollectionProfile => Boolean(item));
@@ -401,9 +573,16 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
   const topSignalText = signals[0] ? `${signals[0].bucket} · ${signals[0].key}` : "暂无";
 
   const explanationLines = recommendation.explanation?.reason_lines ?? recommendation.evidence?.llm_rerank?.reason_lines ?? [];
+  const sessionTrail = history
+    .map((id) => items.get(id))
+    .filter((item): item is NetaCollectionProfile => Boolean(item));
+  const recommendationConfidence = String(
+    recommendation.evidence?.top_candidate_confidence ?? recommendation.evidence?.llm_rerank?.confidence ?? "unknown"
+  );
 
   function openCurrentSheet() {
     setSheet({
+      label: "画像",
       title: currentItem.title,
       summary:
         nextEntry?.reason ??
@@ -421,6 +600,7 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
 
   function openEntrySheet(entry: QueueEntry) {
     setSheet({
+      label: "理由",
       title: entry.candidate.title,
       summary: entry.reason,
       chips: unique([
@@ -446,13 +626,18 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
     setHistory((prev) => [...prev, id]);
     setCurrentId(id);
     setMobileDeckIndex(0);
-    setActiveTab("next");
+    setMainTab("next");
+    setSideTab("session");
+    setNextPanelTab("current");
     setSheet(null);
+    setDragOffset(0);
   }
 
   function handleSkip(id: string) {
     setDismissedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setMobileDeckIndex((prev) => Math.max(0, prev - 1));
+    setNextPanelTab("reason");
+    setDragOffset(0);
   }
 
   function resetAll() {
@@ -461,329 +646,678 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
     setDismissedIds([]);
     setHistory([]);
     setMobileDeckIndex(0);
-    setActiveTab("next");
+    setMainTab("next");
+    setSideTab("summary");
+    setNextPanelTab("reason");
     setSheet(null);
+    setDragOffset(0);
+  }
+
+  function commitSwipe(direction: "like" | "skip") {
+    if (!nextEntry) {
+      return;
+    }
+    if (direction === "like") {
+      handleLike(nextEntry.candidate.uuid);
+      return;
+    }
+    handleSkip(nextEntry.candidate.uuid);
+  }
+
+  function beginDrag(clientX: number) {
+    dragStartX.current = clientX;
+  }
+
+  function moveDrag(clientX: number) {
+    if (dragStartX.current === null) {
+      return;
+    }
+    setDragOffset(clientX - dragStartX.current);
+  }
+
+  function endDrag() {
+    if (dragStartX.current === null) {
+      return;
+    }
+    if (dragOffset > 120) {
+      commitSwipe("like");
+    } else if (dragOffset < -120) {
+      commitSwipe("skip");
+    } else {
+      setDragOffset(0);
+    }
+    dragStartX.current = null;
   }
 
   return (
-    <main className="h-screen overflow-hidden bg-transparent px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
-      <div className="mx-auto flex h-full max-w-[1500px] min-h-0 flex-col gap-4">
-        <header className="flex-none">
-          <div className="flex min-h-0 flex-col gap-4 xl:flex-row xl:items-stretch">
-          <Card className="overflow-hidden border-white/10 bg-[#08131d]/76">
-            <CardHeader className="gap-4 p-5 sm:p-6">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/62">
-                <Layers3 className="h-3.5 w-3.5" />
-                Context-Driven Recommendation Demo
-              </div>
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div className="space-y-2">
-                  <CardTitle className="text-2xl sm:text-4xl">点赞后继续推荐</CardTitle>
-                  <CardDescription className="max-w-3xl text-sm text-white/70 sm:text-base">
-                    推荐被放在第一优先位。你先看“下一条”，再决定点赞、跳过，或者回头查看当前种子和完整列表。
-                  </CardDescription>
-                </div>
-                <Button onClick={resetAll} size="sm" variant="secondary" className="w-fit">
-                  <RotateCcw className="h-4 w-4" />
-                  重置
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <SignalChip label={`当前 ${currentItem.title}`} />
-                {nextEntry ? <ArrowRight className="h-4 w-4 text-white/36" /> : null}
-                {nextEntry ? <SignalChip label={`推荐 ${nextEntry.candidate.title}`} /> : null}
-                <SignalChip label={`候选 ${queue.length}`} />
-                {likedIds.length > 0 ? <SignalChip label={`偏好信号 ${likedIds.length}`} /> : null}
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-white/10 bg-[#08131d]/72 xl:w-[360px] xl:shrink-0">
-            <CardHeader className="p-5 pb-3">
-              <CardTitle className="text-base">Rerank Summary</CardTitle>
-              <CardDescription className="text-sm">
-                {recommendation.explanation?.summary ?? recommendation.recommendation_reason ?? "No explanation available."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 px-5 pb-5">
-              <div className="grid grid-cols-2 gap-3">
-                <StatTile accent label="Recommended" value={nextEntry?.candidate.title ?? "None"} />
-                <StatTile label="Confidence" value={String(recommendation.evidence?.top_candidate_confidence ?? recommendation.evidence?.llm_rerank?.confidence ?? "unknown")} />
-                <StatTile label="Candidates" value={recommendation.evidence?.candidate_count ?? normalized.candidate_count} />
-                <StatTile label="Top Signal" value={topSignalText} />
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm leading-6 text-white/68">
-                <div>Selection rule: {recommendation.evidence?.selection_rule ?? "unknown"}</div>
-                <div>Seed mode: {recommendation.evidence?.current_seed_mode ?? "unknown"}</div>
-              </div>
-            </CardContent>
-          </Card>
+    <main className="h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.14),transparent_22%),radial-gradient(circle_at_top_right,rgba(96,165,250,0.12),transparent_24%),linear-gradient(180deg,#07111a_0%,#09131d_100%)]">
+      <div className="mx-auto flex h-screen max-w-[1760px] flex-col overflow-hidden border-x border-white/8 bg-[#08121c]/92 shadow-[0_30px_80px_rgba(2,6,23,0.45)] backdrop-blur-xl">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/8 px-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-emerald-400/22 bg-emerald-400/10 text-emerald-200">
+              <Layers3 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-semibold text-white">Neta Next Collection</div>
+              <div className="truncate text-[11px] text-slate-400">下一条作品推荐</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 md:flex">
+              <SignalChip label={`候选 ${queue.length}`} />
+              <SignalChip label={`已点赞 ${likedItems.length}`} />
+            </div>
+            <Button onClick={resetAll} size="sm" variant="secondary" className="w-fit border border-white/8 bg-white/[0.06] text-slate-100 hover:bg-white/[0.1]">
+              <RotateCcw className="h-4 w-4" />
+              重置
+            </Button>
           </div>
         </header>
 
-        <section className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <Card className="flex min-h-0 flex-1 flex-col border-white/10 bg-[#08131d]/72">
-            <CardHeader className="gap-4 p-5 pb-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.24em] text-white/45">主视图</div>
-                  <CardTitle className="mt-1 text-xl">Focus Views</CardTitle>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <aside className="shrink-0 border-b border-white/8 bg-[#0a1621]/88 lg:w-[248px] lg:border-b-0 lg:border-r">
+            <div className="flex gap-2 overflow-x-auto p-3 lg:flex-col lg:overflow-visible lg:p-4">
+              <div className="hidden rounded-[1.25rem] border border-white/8 bg-white/[0.03] p-3 lg:block">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Mode</div>
+                <div className="mt-2 text-[13px] leading-5 text-slate-300">
+                  左边切视图，中间看作品，右边看补充说明。
                 </div>
               </div>
-              <div className="grid grid-cols-3 rounded-full border border-white/10 bg-white/6 p-1">
-                {[
-                  { id: "next", label: "推荐" },
-                  { id: "queue", label: "列表" },
-                  { id: "current", label: "当前" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    className={`rounded-full px-3 py-2 text-sm transition ${activeTab === tab.id ? "bg-emerald-400 text-[#07111a]" : "text-white/72"}`}
-                    onClick={() => setActiveTab(tab.id as ActiveTab)}
-                    type="button"
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+
+              <div className="grid min-w-[220px] gap-2 lg:min-w-0">
+                <RailButton
+                  active={mainTab === "next"}
+                  hint="聚焦当前最值得前进的一条推荐。"
+                  icon={<ArrowRight className="h-4 w-4" />}
+                  label="Next pick"
+                  onClick={() => setMainTab("next")}
+                />
+                <RailButton
+                  active={mainTab === "queue"}
+                  hint="检查全部候选顺序，手动重选下一条。"
+                  icon={<Radar className="h-4 w-4" />}
+                  label="Candidate queue"
+                  onClick={() => setMainTab("queue")}
+                />
+                <RailButton
+                  active={mainTab === "current"}
+                  hint="查看当前 seed 的标签、CTA 与来源。"
+                  icon={<Target className="h-4 w-4" />}
+                  label="Current seed"
+                  onClick={() => setMainTab("current")}
+                />
               </div>
-            </CardHeader>
-            <CardContent className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-5 pb-5">
-              {activeTab === "current" ? (
-                <Card className="overflow-hidden border-white/8 bg-[#0a1723]">
-                  <CardContent className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[180px_minmax(0,1fr)]">
-                    <div className="lg:max-w-[180px]">
+
+            </div>
+          </aside>
+
+          <section className="min-h-0 min-w-0 flex-1 bg-[#0b1722]">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="shrink-0 border-b border-white/8 px-4 py-3 sm:px-5">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                      <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1">Flow</span>
+                      <span className="rounded-full border border-emerald-400/22 bg-emerald-400/10 px-2.5 py-1 text-emerald-200">
+                        {mainTab === "next" ? "Next pick" : mainTab === "queue" ? "Candidate queue" : "Current seed"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex min-w-0 items-center gap-2 overflow-hidden text-[13px] text-slate-300">
+                      <span className="min-w-0 truncate whitespace-nowrap">当前作品：{currentItem.title}</span>
+                      {nextEntry ? (
+                        <>
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                          <span className="min-w-0 truncate whitespace-nowrap text-white">下一条：{nextEntry.candidate.title}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      onClick={() => setInsightCollapsed((value) => !value)}
+                      size="sm"
+                      variant="secondary"
+                      className="hidden border border-white/8 bg-white/[0.04] text-slate-100 hover:bg-white/[0.08] lg:inline-flex"
+                    >
+                      {insightCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+                      {insightCollapsed ? "展开洞察" : "收起洞察"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`min-h-0 flex-1 px-6 py-5 sm:px-8 ${
+                  mainTab === "next" ? "overflow-hidden" : "overflow-y-auto"
+                }`}
+              >
+                {mainTab === "next" ? (
+                  <div className="grid h-full min-h-0 gap-8 xl:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.72fr)]">
+                    <div className="flex min-h-0 flex-col rounded-[1.4rem] border border-emerald-400/18 bg-white/[0.03] p-3 overflow-hidden">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-200/70">Next pick</div>
+                          <div className="mt-1 text-[13px] text-slate-400">当前推荐作品。</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {nextEntry ? (
+                            <Button
+                              onClick={() => openEntrySheet(nextEntry)}
+                              size="sm"
+                              variant="secondary"
+                              className="border border-white/8 bg-white/[0.05] text-slate-100 hover:bg-white/[0.09]"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              理由
+                            </Button>
+                          ) : null}
+                          <Button
+                            onClick={openCurrentSheet}
+                            size="sm"
+                            variant="secondary"
+                            className="border border-white/8 bg-white/[0.05] text-slate-100 hover:bg-white/[0.09]"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            当前画像
+                          </Button>
+                          {nextEntry ? <SignalChip label={`${nextEntry.score} pts`} /> : null}
+                        </div>
+                      </div>
+
+                      {nextEntry ? (
+                        <div className="mx-auto flex min-h-0 w-full max-w-[390px] flex-col gap-3">
+                          <MinimalVisualCard
+                            className="aspect-[4/4.55]"
+                            accent
+                            eyebrow="Recommended"
+                            chips={unique([
+                              ...nextEntry.evidence.conceptOverlap,
+                              ...nextEntry.evidence.intentOverlap,
+                              ...nextEntry.evidence.themeOverlap,
+                            ])}
+                            item={nextEntry.candidate}
+                            title={nextEntry.candidate.title}
+                            overlayActions={
+                              <>
+                                <Button
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    openEntrySheet(nextEntry);
+                                  }}
+                                  variant="secondary"
+                                  size="sm"
+                                  className="border border-white/12 bg-[#07111a]/76 text-slate-100 backdrop-blur-sm hover:bg-[#07111a]"
+                                >
+                                  <Sparkles className="h-4 w-4" />
+                                  理由
+                                </Button>
+                              </>
+                            }
+                            footer={
+                              <div className="text-[12px] text-slate-500">点击图片打开作品</div>
+                            }
+                          />
+                          <div
+                            className="grid shrink-0 grid-cols-2 gap-2"
+                            onMouseLeave={() => setDragOffset(0)}
+                            onMouseMove={(event) => moveDrag(event.clientX)}
+                            onMouseUp={endDrag}
+                            onTouchEnd={endDrag}
+                            onTouchMove={(event) => moveDrag(event.touches[0]?.clientX ?? 0)}
+                          >
+                            <Button
+                              onMouseDown={(event) => beginDrag(event.clientX)}
+                              onTouchStart={(event) => beginDrag(event.touches[0]?.clientX ?? 0)}
+                              onClick={() => handleSkip(nextEntry.candidate.uuid)}
+                              variant="secondary"
+                              className="border border-white/8 bg-white/[0.05] text-slate-100 hover:bg-white/[0.09]"
+                            >
+                              <X className="h-4 w-4" />
+                              跳过
+                            </Button>
+                            <Button
+                              onMouseDown={(event) => beginDrag(event.clientX)}
+                              onTouchStart={(event) => beginDrag(event.touches[0]?.clientX ?? 0)}
+                              onClick={() => handleLike(nextEntry.candidate.uuid)}
+                            >
+                              <Heart className="h-4 w-4" />
+                              点赞
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-[1.25rem] border border-dashed border-white/12 bg-black/20 p-8 text-center text-sm text-slate-400">
+                          当前没有可推荐的下一条作品。
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex min-h-0 flex-col rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4 overflow-hidden">
+                      <div className="grid gap-3">
+                        <div className="flex shrink-0 items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                          <Bot className="h-3.5 w-3.5" />
+                          Why this one
+                        </div>
+                        <div className="text-[13px] leading-6 text-slate-400">推荐理由展示在右侧。</div>
+                        {nextEntry ? (
+                          <div className="flex min-w-0 flex-wrap gap-2">
+                            <span className="max-w-full truncate whitespace-nowrap rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] text-slate-300">
+                              {nextEntry.reason}
+                            </span>
+                            {unique([
+                              ...nextEntry.evidence.conceptOverlap,
+                              ...nextEntry.evidence.intentOverlap,
+                              ...nextEntry.evidence.themeOverlap,
+                            ])
+                              .slice(0, 2)
+                              .map((chip) => (
+                                <SignalChip key={chip} label={chip} />
+                              ))}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl border border-white/8 bg-black/20 p-1">
+                        {[
+                          { id: "reason", label: "理由" },
+                          { id: "overlap", label: "重合" },
+                          { id: "current", label: "当前" },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            className={`rounded-lg px-3 py-2 text-[12px] transition ${
+                              nextPanelTab === tab.id ? "bg-white/[0.08] text-white" : "text-slate-400 hover:bg-white/[0.04]"
+                            }`}
+                            onClick={() => setNextPanelTab(tab.id as NextPanelTab)}
+                            type="button"
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-3 min-h-0 flex-1 overflow-hidden">
+                        {nextPanelTab === "reason" ? (
+                          <div className="flex h-full min-h-0 flex-col rounded-[1.2rem] border border-white/8 bg-black/20 px-4 py-3">
+                            <div className="min-h-0 flex-1 overflow-y-auto pr-2 text-[14px] leading-7 text-slate-300">
+                              {explanationLines.length ? explanationLines.slice(0, 6).map((line) => <p key={line}>{line}</p>) : <p>暂无 explanation lines。</p>}
+                            </div>
+                          </div>
+                        ) : null}
+                        {nextPanelTab === "overlap" && nextEntry ? (
+                          <div className="h-full overflow-y-auto space-y-3 pr-2">
+                            <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3">
+                              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">推荐重合点</div>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {unique([
+                                  ...nextEntry.evidence.conceptOverlap,
+                                  ...nextEntry.evidence.intentOverlap,
+                                  ...nextEntry.evidence.themeOverlap,
+                                  ...nextEntry.evidence.tagOverlap,
+                                ])
+                                  .slice(0, 8)
+                                  .map((chip) => (
+                                    <SignalChip key={chip} label={chip} />
+                                  ))}
+                              </div>
+                            </div>
+                            <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-[13px] leading-6 text-slate-300">
+                              <div>互动形态：{nextEntry.evidence.interactionOverlap.join(" / ") || "暂无"}</div>
+                              <div>社区延续：{nextEntry.evidence.communityOverlap.join(" / ") || "暂无"}</div>
+                              <div>候选来源：{(nextEntry.candidate.source_feed_item?.recall_sources ?? []).join(" / ") || "暂无"}</div>
+                            </div>
+                          </div>
+                        ) : null}
+                        {nextPanelTab === "current" ? (
+                          <div className="h-full overflow-y-auto pr-2">
+                            <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3">
+                              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">当前作品</div>
+                              <div className="mt-2 text-sm font-medium text-white">{currentItem.title}</div>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {unique([...(currentItem.concept_labels ?? []), ...(currentItem.intent_labels ?? []), ...(currentItem.theme_labels ?? [])])
+                                  .slice(0, 6)
+                                  .map((chip) => (
+                                    <SignalChip key={chip} label={chip} />
+                                  ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {mainTab === "current" ? (
+                  <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
+                    <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4">
                       <CollectionCover item={currentItem} />
                     </div>
-                    <div className="grid gap-4">
+                    <div className="space-y-4 rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4">
                       <div className="flex flex-wrap items-center gap-2">
-                        <SignalChip label="Current" />
-                        <SignalChip label={nextEntry ? `Next ${nextEntry.score}` : "No Queue"} />
+                        <SignalChip label="Current seed" />
                         <SignalChip label={(currentItem.source_feed_item?.recall_sources ?? []).slice(0, 2).join(" / ") || "seed"} />
+                        <SignalChip label={`下一条分数 ${nextEntry?.score ?? "-"}`} />
                       </div>
-                      <div className="space-y-2">
-                        <h3 className="text-xl font-semibold text-white">{currentItem.title}</h3>
-                        <p className="text-sm leading-6 text-white/68">
-                          当前基于《{currentItem.title}》继续推荐。点赞会强化用户信号，跳过会从候选池移除，下一条推荐即时重算。
+                      <div>
+                        <h2 className="text-lg font-semibold text-white">{currentItem.title}</h2>
+                        <p className="mt-2 text-[13px] leading-6 text-slate-300">
+                          当前种子决定这条推荐链路的上下文边界。它的标签、CTA 和互动形态会直接影响 rerank。
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {unique([
                           ...(currentItem.concept_labels ?? []),
                           ...(currentItem.intent_labels ?? []),
                           ...(currentItem.theme_labels ?? []),
+                          ...(currentItem.content_tags ?? []),
                         ])
-                          .slice(0, 6)
+                          .slice(0, 10)
                           .map((chip) => (
                             <SignalChip key={chip} label={chip} />
                           ))}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-                        <Button asChild variant="outline" className="border-white/12 bg-transparent text-white hover:bg-white/6">
-                          <Link href={currentItem.collection_link ?? "#"} rel="noreferrer" target="_blank">
-                            <ExternalLink className="h-4 w-4" />
-                            打开
-                          </Link>
-                        </Button>
-                        <Button onClick={openCurrentSheet} variant="secondary">
-                          <Sparkles className="h-4 w-4" />
-                          理由
-                        </Button>
-                        <Button onClick={() => handleSkip(currentItem.uuid)} variant="secondary">
-                          <X className="h-4 w-4" />
-                          跳过
-                        </Button>
-                        <Button onClick={() => handleLike(currentItem.uuid)}>
-                          <Heart className="h-4 w-4" />
-                          点赞
-                        </Button>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-[13px] leading-6 text-slate-300">
+                          <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">CTA</div>
+                          <div className="mt-2">{currentItem.cta_info?.brief_input ?? "No CTA provided."}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-[13px] leading-6 text-slate-300">
+                          <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Preset</div>
+                          <div className="mt-2">{currentItem.cta_info?.preset_description ?? "No preset description."}</div>
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-
-              {activeTab === "next" ? (
-                nextEntry ? (
-                  <CollectionCard
-                    entry={nextEntry}
-                    label="Recommended"
-                    onDetail={() => openEntrySheet(nextEntry)}
-                    onLike={() => handleLike(nextEntry.candidate.uuid)}
-                    onSkip={() => handleSkip(nextEntry.candidate.uuid)}
-                    compact
-                  />
-                ) : (
-                  <div className="rounded-3xl border border-dashed border-white/10 bg-white/4 p-8 text-center text-sm text-white/60">
-                    当前没有可推荐的下一条作品。
                   </div>
-                )
-              ) : null}
+                ) : null}
 
-              {activeTab === "queue" ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm text-white/58">推荐列表默认按 rerank 排序，移动端按 deck 浏览。</p>
+                {mainTab === "queue" ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-[13px] text-slate-300">候选池按 rerank 分数排序。移动端按 deck 浏览，桌面端按列表浏览。</div>
+                      <div className="hidden items-center gap-2 xl:flex">
+                        <SignalChip label={`Queue ${queue.length}`} />
+                      </div>
+                    </div>
+
                     <div className="flex items-center gap-2 xl:hidden">
                       <Button
                         disabled={deckIndex <= 0}
                         onClick={() => setMobileDeckIndex((value) => Math.max(0, value - 1))}
                         size="sm"
                         variant="secondary"
+                        className="border border-white/8 bg-white/[0.05] text-slate-100 hover:bg-white/[0.09]"
                       >
                         上一张
                       </Button>
-                      <span className="text-xs text-white/55">
-                        {queue.length ? `${deckIndex + 1} / ${queue.length}` : "0 / 0"}
-                      </span>
+                      <span className="text-xs text-slate-500">{queue.length ? `${deckIndex + 1} / ${queue.length}` : "0 / 0"}</span>
                       <Button
                         disabled={deckIndex >= queue.length - 1}
                         onClick={() => setMobileDeckIndex((value) => Math.min(queue.length - 1, value + 1))}
                         size="sm"
                         variant="secondary"
+                        className="border border-white/8 bg-white/[0.05] text-slate-100 hover:bg-white/[0.09]"
                       >
                         下一张
                       </Button>
                     </div>
-                  </div>
 
-                  {deckEntry ? (
-                    <div className="xl:hidden">
-                      <CollectionCard
-                        entry={deckEntry}
-                        label={`#${deckIndex + 1}`}
-                        onDetail={() => openEntrySheet(deckEntry)}
-                        onLike={() => handleLike(deckEntry.candidate.uuid)}
-                        onSkip={() => handleSkip(deckEntry.candidate.uuid)}
-                        compact
-                      />
+                    {deckEntry ? (
+                      <div className="xl:hidden">
+                        <CollectionCard
+                          entry={deckEntry}
+                          label={`候选 #${deckIndex + 1}`}
+                          onDetail={() => openEntrySheet(deckEntry)}
+                          onLike={() => handleLike(deckEntry.candidate.uuid)}
+                          onSkip={() => handleSkip(deckEntry.candidate.uuid)}
+                          compact
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="hidden gap-3 xl:grid">
+                      {queue.map((entry, index) => (
+                        <RankedQueueRow
+                          key={entry.candidate.uuid}
+                          entry={entry}
+                          index={index}
+                          onDetail={() => openEntrySheet(entry)}
+                          onLike={() => handleLike(entry.candidate.uuid)}
+                          onSkip={() => handleSkip(entry.candidate.uuid)}
+                        />
+                      ))}
                     </div>
-                  ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
 
-                  <div className="hidden gap-3 xl:grid">
-                    {queue.map((entry, index) => (
-                      <RankedQueueRow
-                        key={entry.candidate.uuid}
-                        entry={entry}
-                        index={index}
-                        onDetail={() => openEntrySheet(entry)}
-                        onLike={() => handleLike(entry.candidate.uuid)}
-                        onSkip={() => handleSkip(entry.candidate.uuid)}
-                      />
+          <aside
+            className={`shrink-0 border-t border-white/8 bg-[#08121c] transition-[width] duration-200 lg:border-l lg:border-t-0 ${
+              insightCollapsed ? "lg:w-[68px]" : "lg:w-[360px]"
+            }`}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="flex items-center justify-between border-b border-white/8 px-3 py-3">
+                <div className={`${insightCollapsed ? "hidden" : "block"}`}>
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Insights</div>
+                  <div className="mt-1 text-[13px] text-slate-300">会话摘要与解释</div>
+                </div>
+                <button
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08]"
+                  onClick={() => setInsightCollapsed((value) => !value)}
+                  type="button"
+                >
+                  {insightCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {insightCollapsed ? (
+                <div className="hidden flex-1 flex-col items-center gap-3 py-4 lg:flex">
+                  {[
+                    { id: "summary", icon: <LayoutPanelLeft className="h-4 w-4" /> },
+                    { id: "session", icon: <Layers3 className="h-4 w-4" /> },
+                    { id: "explain", icon: <Sparkles className="h-4 w-4" /> },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                        sideTab === tab.id
+                          ? "border-emerald-400/30 bg-emerald-400/14 text-emerald-200"
+                          : "border-white/8 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                      }`}
+                      onClick={() => {
+                        setSideTab(tab.id as SideTab);
+                        setInsightCollapsed(false);
+                      }}
+                      type="button"
+                    >
+                      {tab.icon}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-1 border-b border-white/8 p-3">
+                    {[
+                      { id: "summary", label: "摘要" },
+                      { id: "session", label: "会话" },
+                      { id: "explain", label: "解释" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        className={`rounded-xl px-3 py-2 text-[12px] transition ${
+                          sideTab === tab.id ? "bg-white/[0.09] text-white" : "text-slate-400 hover:bg-white/[0.04]"
+                        }`}
+                        onClick={() => setSideTab(tab.id as SideTab)}
+                        type="button"
+                      >
+                        {tab.label}
+                      </button>
                     ))}
                   </div>
 
-                  {!queue.length ? (
-                    <div className="rounded-3xl border border-dashed border-white/10 bg-white/4 p-8 text-center text-sm text-white/60">
-                      候选已经用尽，点击重置重新开始。
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </CardContent>
-            </Card>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                    {sideTab === "summary" ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-2xl border border-emerald-400/18 bg-emerald-400/[0.08] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/70">本轮推荐</div>
+                            <div className="mt-2 text-sm font-medium text-white">{nextEntry?.candidate.title ?? "暂无"}</div>
+                          </div>
+                          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">置信度</div>
+                            <div className="mt-2 text-sm font-medium text-white">{recommendationConfidence}</div>
+                          </div>
+                          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">候选数</div>
+                            <div className="mt-2 text-sm font-medium text-white">
+                              {recommendation.evidence?.candidate_count ?? normalized.candidate_count}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">主信号</div>
+                            <div className="mt-2 text-sm font-medium text-white">{topSignalText}</div>
+                          </div>
+                        </div>
+                        <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-[13px] leading-6 text-slate-300">
+                          <div>推荐结果：{nextEntry?.candidate.title ?? "暂无"}</div>
+                          <div>主要方向：{topSignalText}</div>
+                          <div>候选来源：{formatListLike(normalized.recall_summary?.sources, "unknown")}</div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {sideTab === "session" ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">已点赞</div>
+                            <div className="mt-2 text-sm font-medium text-white">{likedItems.length}</div>
+                          </div>
+                          <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">已跳过</div>
+                            <div className="mt-2 text-sm font-medium text-white">{dismissedIds.length}</div>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-slate-500">偏好标签</div>
+                          <div className="flex flex-wrap gap-2">
+                            {signals.length ? (
+                              signals.map((signal) => (
+                                <SignalChip key={`${signal.bucket}:${signal.key}`} label={`${signal.bucket} · ${signal.key} ×${signal.value}`} />
+                              ))
+                            ) : (
+                              <p className="text-[13px] text-slate-400">还没有足够信号，先点几次喜欢试试。</p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-slate-500">会话轨迹</div>
+                          <div className="flex flex-wrap gap-2">
+                            {sessionTrail.length ? (
+                              sessionTrail.map((item) => <SignalChip key={item.uuid} label={item.title} />)
+                            ) : (
+                              <p className="text-[13px] text-slate-400">用户走过的推荐路径会显示在这里。</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {sideTab === "explain" ? (
+                      <div className="space-y-3 text-[13px] text-slate-300">
+                        <div className="space-y-2 rounded-[1.2rem] border border-white/8 bg-white/[0.03] p-4">
+                          {explanationLines.length ? explanationLines.map((line) => <p key={line}>{line}</p>) : <p>暂无 explanation lines。</p>}
+                        </div>
+                        {(recommendation.fallback_candidates ?? []).slice(0, 3).map((item) => (
+                          <div key={item.uuid} className="rounded-[1.2rem] border border-white/8 bg-white/[0.03] p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <strong className="text-white">{item.title}</strong>
+                              <span className="text-xs text-slate-500">{item.score} pts</span>
+                            </div>
+                            <p className="mt-2 text-[13px] text-slate-400">{item.reason_lines?.[0] ?? "No explanation."}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              )}
+            </div>
+          </aside>
+        </div>
+
+        <div className="shrink-0 border-t border-white/8 bg-[#08121c]/98 px-4 py-3 sm:px-5">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_repeat(5,minmax(0,0.7fr))]">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">当前作品</div>
+              <div className="mt-2 truncate text-sm font-medium text-white">{currentItem.title}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">主信号</div>
+              <div className="mt-2 text-sm font-medium text-white">{topSignalText}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">置信度</div>
+              <div className="mt-2 text-sm font-medium text-white">{recommendationConfidence}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">候选数</div>
+              <div className="mt-2 text-sm font-medium text-white">{recommendation.evidence?.candidate_count ?? normalized.candidate_count}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">已赞</div>
+              <div className="mt-2 text-sm font-medium text-white">{likedItems.length}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">跳过</div>
+              <div className="mt-2 text-sm font-medium text-white">{dismissedIds.length}</div>
+            </div>
           </div>
+        </div>
 
-          <aside className="flex min-h-0 flex-col gap-4 xl:w-[340px] xl:shrink-0">
-            <Card className="border-white/10 bg-[#08131d]/72">
-              <CardHeader className="p-5 pb-3">
-                <CardTitle className="text-base">用户信号</CardTitle>
-                <CardDescription>点赞后这里会持续累积偏好状态。</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 px-5 pb-5">
-                <div className="grid grid-cols-2 gap-3">
-                  <StatTile label="Liked" value={likedItems.length} />
-                  <StatTile label="Dismissed" value={dismissedIds.length} />
+        {sheet ? (
+          <>
+            <button
+              aria-label="Close sheet"
+              className="fixed inset-0 z-40 bg-[#02070b]/68 backdrop-blur-sm"
+              onClick={() => setSheet(null)}
+              type="button"
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-[#09141e] p-5 shadow-2xl sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.24em] text-white/42">{sheet.label}</div>
+                  <h2 className="mt-2 text-xl font-semibold text-white sm:text-2xl">{sheet.title}</h2>
                 </div>
-                <div className="space-y-3">
-                  <div className="text-sm font-medium text-white">已点赞</div>
-                  <div className="flex flex-wrap gap-2">
-                    {likedItems.length ? likedItems.map((item) => <SignalChip key={item.uuid} label={item.title} />) : <p className="text-sm text-white/56">还没有点赞行为。</p>}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="text-sm font-medium text-white">偏好标签</div>
-                  <div className="flex flex-wrap gap-2">
-                    {signals.length ? (
-                      signals.map((signal) => (
-                        <SignalChip key={`${signal.bucket}:${signal.key}`} label={`${signal.bucket} · ${signal.key} ×${signal.value}`} />
-                      ))
-                    ) : (
-                      <p className="text-sm text-white/56">点赞后会在这里聚合偏好信号。</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-white/10 bg-[#08131d]/72">
-              <CardHeader className="p-5 pb-3">
-                <CardTitle className="text-base">Recall Surface</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 px-5 pb-5 text-sm leading-6 text-white/68">
-                <p>Sources: {formatListLike(normalized.recall_summary?.sources, "unknown")}</p>
-                <p>Search queries: {formatListLike(normalized.recall_summary?.search_queries, "none")}</p>
-                <p>Search sources: {formatListLike(normalized.recall_summary?.search_sources, "none")}</p>
-                <p>Merged candidates: {normalized.recall_summary?.merged_candidate_count ?? normalized.candidate_count}</p>
-              </CardContent>
-            </Card>
-
-            <Card className="min-h-0 border-white/10 bg-[#08131d]/72">
-              <CardHeader className="p-5 pb-3">
-                <CardTitle className="text-base">Explanation & Fallback</CardTitle>
-              </CardHeader>
-              <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-5 text-sm text-white/68">
-                <div className="space-y-2">
-                  {explanationLines.length ? explanationLines.map((line) => <p key={line}>{line}</p>) : <p>No LLM explanation lines.</p>}
-                </div>
-                {(recommendation.fallback_candidates ?? []).slice(0, 3).map((item) => (
-                  <div key={item.uuid} className="rounded-2xl border border-white/8 bg-white/4 p-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <strong className="text-white">{item.title}</strong>
-                      <span className="text-xs text-white/52">{item.score} pts</span>
-                    </div>
-                    <p className="mt-2 text-sm text-white/62">{item.reason_lines?.[0] ?? "No explanation."}</p>
+                <Button
+                  onClick={() => setSheet(null)}
+                  size="sm"
+                  variant="secondary"
+                  className="border border-white/8 bg-white/[0.05] text-slate-100 hover:bg-white/[0.1]"
+                >
+                  关闭
+                </Button>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-white/70">{sheet.summary}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {sheet.chips.length ? sheet.chips.map((chip) => <SignalChip key={chip} label={chip} />) : <SignalChip label="no signal" />}
+              </div>
+              <div className="mt-4 max-h-[42vh] space-y-2 overflow-y-auto pr-1">
+                {sheet.items.map((item) => (
+                  <div key={item} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm leading-6 text-white/68">
+                    {item}
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          </aside>
-        </section>
-      </div>
-
-      {sheet ? (
-        <>
-          <button
-            aria-label="Close sheet"
-            className="fixed inset-0 z-40 bg-[#02070b]/60 backdrop-blur-sm"
-            onClick={() => setSheet(null)}
-            type="button"
-          />
-          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl rounded-t-[2rem] border border-white/10 bg-[#09141e] p-5 shadow-2xl sm:p-6">
-            <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-white/16" />
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-white/42">推荐理由</div>
-                <h2 className="mt-2 text-2xl font-semibold text-white">{sheet.title}</h2>
               </div>
-              <Button onClick={() => setSheet(null)} size="sm" variant="secondary">
-                关闭
-              </Button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-white/70">{sheet.summary}</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {sheet.chips.length ? sheet.chips.map((chip) => <SignalChip key={chip} label={chip} />) : <SignalChip label="no signal" />}
             </div>
-            <div className="mt-5 space-y-2">
-              {sheet.items.map((item) => (
-                <div key={item} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm leading-6 text-white/68">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </div>
     </main>
   );
 }

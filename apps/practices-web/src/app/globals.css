@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #07111a;
-  --background-soft: #0d1b28;
-  --foreground: #edf4f7;
-  --muted: rgba(237, 244, 247, 0.68);
-  --panel: rgba(7, 17, 26, 0.58);
-  --accent: #44d8a6;
-  --accent-2: #7dc4ff;
-  --border: rgba(255, 255, 255, 0.12);
+  --background: #f8fafc;
+  --background-soft: #f1f5f9;
+  --background-elevated: #ffffff;
+  --foreground: #0f172a;
+  --muted: rgba(15, 23, 42, 0.62);
+  --panel: rgba(255, 255, 255, 0.9);
+  --accent: #10b981;
+  --accent-2: #4f46e5;
+  --border: rgba(148, 163, 184, 0.24);
 }
 
 * {
@@ -24,14 +25,22 @@ body {
 body {
   color: var(--foreground);
   background:
-    radial-gradient(circle at top left, rgba(68, 216, 166, 0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(125, 196, 255, 0.18), transparent 26%),
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.05), transparent 24%),
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 22%),
     linear-gradient(180deg, var(--background-soft) 0%, var(--background) 72%);
-  font-family:
-    "Inter",
-    "SF Pro Text",
-    system-ui,
-    sans-serif;
+  font-family: "Manrope", "SF Pro Text", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.03em;
+  line-height: 1.18;
 }
 
 a {
@@ -43,7 +52,22 @@ button {
   font: inherit;
 }
 
-::selection {
-  background: rgba(68, 216, 166, 0.25);
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background: rgba(148, 163, 184, 0.5);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::selection {
+  background: rgba(79, 70, 229, 0.18);
+}
