@@ -604,6 +604,7 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
   );
   const candidateCount = liveData.recommendation.evidence?.candidate_count ?? liveData.normalized.candidate_count;
   const recallSourcesLabel = formatListLike(liveData.normalized.recall_summary?.sources, "unknown");
+  const activeFeedMode = liveData.normalized.recall_summary?.mode ?? mainTab;
   const shouldBootstrapRecommendation =
     mainTab === "next" &&
     !isRefreshing &&
@@ -639,7 +640,10 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(nextState),
+        body: JSON.stringify({
+          ...nextState,
+          requestMode: localState?.mainTab ?? mainTab,
+        }),
       });
       const payload = (await response.json()) as ApiEnvelope<LiveRecommendationResponse>;
       if (!response.ok) {
@@ -1269,18 +1273,53 @@ export function NetaRecommendationDemo({ current, normalized, recommendation }: 
                   hint="单卡专注决策"
                   icon={<Target className="h-4 w-4" />}
                   label="Next"
-                  onClick={() => setMainTab("next")}
+                  onClick={() => {
+                    setMainTab("next");
+                    void refreshLiveRecommendation({
+                      currentCollectionUuid: currentItem.uuid,
+                      likedCollectionUuids: likedIds,
+                      dismissedCollectionUuids: dismissedIds,
+                      seenCollectionUuids: unique([currentItem.uuid, ...history, ...dismissedIds, ...likedIds]),
+                    }, {
+                      currentId: currentItem.uuid,
+                      likedIds,
+                      dismissedIds,
+                      history,
+                      mobileDeckIndex,
+                      mainTab: "next",
+                      sideTab,
+                      nextPanelTab,
+                    });
+                  }}
                 />
                 <RailButton
                   active={mainTab === "feed"}
                   hint="多列探索流"
                   icon={<Radar className="h-4 w-4" />}
                   label="Flow"
-                  onClick={() => setMainTab("feed")}
+                  onClick={() => {
+                    setMainTab("feed");
+                    void refreshLiveRecommendation({
+                      currentCollectionUuid: currentItem.uuid,
+                      likedCollectionUuids: likedIds,
+                      dismissedCollectionUuids: dismissedIds,
+                      seenCollectionUuids: unique([currentItem.uuid, ...history, ...dismissedIds, ...likedIds]),
+                    }, {
+                      currentId: currentItem.uuid,
+                      likedIds,
+                      dismissedIds,
+                      history,
+                      mobileDeckIndex,
+                      mainTab: "feed",
+                      sideTab,
+                      nextPanelTab,
+                    });
+                  }}
                 />
               </div>
-              <div className="grid gap-2 border-t border-white/8 pt-4">
-                <StatTile accent label="当前模式" value={mainTab === "next" ? "Next" : "Flow"} />
+<<<<<<< Updated upstream
+              <div className="mt-3 grid gap-2 border-t border-white/8 pt-3">
+                <StatTile accent label="当前模式" value={activeFeedMode === "next" ? "Next" : "Flow"} />
                 <StatTile label="当前作品" value={currentItem.title} />
                 <StatTile label="候选数" value={queue.length} />
               </div>

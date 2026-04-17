@@ -168,6 +168,7 @@ type ScoredCandidate = {
 export type NetaSessionRequest = {
   currentCollectionUuid?: string;
   currentSource?: string;
+  requestMode?: "next" | "feed";
   likedCollectionUuids?: string[];
   dismissedCollectionUuids?: string[];
   seenCollectionUuids?: string[];
@@ -1150,12 +1151,20 @@ export async function getLiveNetaRecommendationSession(
     });
 
     stage = "load_recall";
-    const recallCollections = [
-      ...interactiveCollections,
-      ...(await loadFeedPages(["request_community_feed", "--theme", "热门"], "community_hot", Math.max(1, Math.ceil(feedPageCount / 2)))),
-      ...(await loadFeedPages(["request_community_feed", "--theme", "最新"], "community_latest", Math.max(1, Math.ceil(feedPageCount / 2)))),
-      ...(await loadFeedPages(["request_community_feed", "--theme", "关注"], "community_following", Math.max(1, Math.ceil(feedPageCount / 2)))),
-    ];
+    const requestMode = request.requestMode === "feed" ? "feed" : "next";
+    const effectiveFeedPageCount = requestMode === "feed" ? Math.max(1, Math.ceil((request.feedPageCount ?? 2) / 2)) : 1;
+    const recallCollections = requestMode === "feed"
+      ? [
+          ...(await loadFeedPages(["request_community_feed", "--theme", "热门"], "community_hot", effectiveFeedPageCount)),
+          ...(await loadFeedPages(["request_community_feed", "--theme", "最新"], "community_latest", effectiveFeedPageCount)),
+          ...(await loadFeedPages(["request_community_feed", "--theme", "关注"], "community_following", effectiveFeedPageCount)),
+        ]
+      : [
+          ...interactiveCollections,
+          ...(await loadFeedPages(["request_community_feed", "--theme", "热门"], "community_hot", 1)),
+          ...(await loadFeedPages(["request_community_feed", "--theme", "最新"], "community_latest", 1)),
+          ...(await loadFeedPages(["request_community_feed", "--theme", "关注"], "community_following", 1)),
+        ];
 
     for (const query of searchQueries) {
       recallCollections.push(
@@ -1232,6 +1241,7 @@ export async function getLiveNetaRecommendationSession(
         },
         search_queries: searchQueries,
         merged_candidate_count: candidateProfiles.length,
+        mode: requestMode,
       },
     };
 

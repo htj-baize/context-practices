@@ -78,6 +78,7 @@ export type NetaNormalizedFeedArtifact = {
     merged_candidate_count?: number;
     search_queries?: string[];
     search_sources?: string[] | Record<string, number>;
+    mode?: "next" | "feed";
   };
 };
 
