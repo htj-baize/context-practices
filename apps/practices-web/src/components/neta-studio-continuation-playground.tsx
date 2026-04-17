@@ -353,6 +353,8 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
             <ToneChip>{data.caseSlug}</ToneChip>
             <ToneChip>context-engine</ToneChip>
             <ToneChip>playground</ToneChip>
+            <ToneChip>{data.mode}</ToneChip>
+            {data.activeWorldId ? <ToneChip>{data.activeWorldId}</ToneChip> : null}
           </div>
         </div>
 
@@ -368,10 +370,37 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
                 <CardDescription className="max-w-3xl text-base text-white/70 sm:text-lg">
                   {data.summary}
                 </CardDescription>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    asChild
+                    variant={data.mode === "fixture" ? "secondary" : "outline"}
+                    size="sm"
+                    className="border-white/10 bg-white/6 text-white hover:bg-white/10"
+                  >
+                    <Link href="/neta-studio-continuation-engine">Fixture mode</Link>
+                  </Button>
+                  {data.suggestedWorlds.slice(0, 3).map((world) => (
+                    <Button
+                      key={world.id}
+                      asChild
+                      variant={data.activeWorldId === world.id ? "secondary" : "outline"}
+                      size="sm"
+                      className="border-white/10 bg-transparent text-white/72 hover:bg-white/8 hover:text-white"
+                    >
+                      <Link href={`/neta-studio-continuation-engine?worldId=${encodeURIComponent(world.id)}`}>
+                        {world.name}
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
               </div>
               <div className="rounded-[1.75rem] border border-white/10 bg-[#08131d]/72 p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">Current fixture</div>
-                <div className="mt-2 text-lg font-semibold text-white">{activeFixture.label}</div>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">
+                  {data.mode === "live" ? "Current world" : "Current fixture"}
+                </div>
+                <div className="mt-2 text-lg font-semibold text-white">
+                  {data.mode === "live" ? activeFixture.snapshot.config?.name ?? activeFixture.snapshot.worldId : activeFixture.label}
+                </div>
                 <div className="mt-2 text-sm leading-6 text-white/64">{activeFixture.description}</div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {data.fixtures.map((fixture) => (
@@ -499,6 +528,35 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
                     选中 top offer 后，已经能落成一个可执行、可写回、可再次 rerun 的请求对象。
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/10 bg-[#08131d]/72">
+              <CardHeader>
+                <CardTitle className="text-white">Public worlds</CardTitle>
+                <CardDescription className="text-white/62">
+                  Use these public studio worlds as live upstream inputs for the continuation engine.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                {data.suggestedWorlds.map((world) => (
+                  <Link
+                    key={world.id}
+                    href={`/neta-studio-continuation-engine?worldId=${encodeURIComponent(world.id)}`}
+                    className={
+                      world.id === data.activeWorldId
+                        ? "rounded-[1.4rem] border border-emerald-400/18 bg-emerald-400/10 p-4"
+                        : "rounded-[1.4rem] border border-white/8 bg-white/[0.035] p-4 transition-colors hover:bg-white/[0.05]"
+                    }
+                  >
+                    <div className="text-sm font-medium text-white">{world.name}</div>
+                    <div className="mt-1 font-mono text-[11px] text-white/38">{world.id}</div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <ToneChip>{world.atomCount} atoms</ToneChip>
+                      <ToneChip>{world.workCount} works</ToneChip>
+                    </div>
+                  </Link>
+                ))}
               </CardContent>
             </Card>
 
