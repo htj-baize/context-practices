@@ -14,6 +14,7 @@ const CASES_ROOT = path.resolve(process.cwd(), "..", "..", "cases");
 const DEDICATED_ROUTE_SLUGS = new Set([
   "neta-next-collection-recommendation",
   "neta-studio-continuation-engine",
+  "neta-studio-live-world-playground",
 ]);
 
 function inferSummary(slug: string, readme: string): PracticeCaseSummary {

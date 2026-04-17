@@ -332,7 +332,44 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
   );
 
   if (!activeFixture) {
-    return null;
+    return (
+      <main className="min-h-screen px-4 py-5 sm:px-7 sm:py-7 lg:px-10">
+        <div className="mx-auto flex max-w-5xl flex-col gap-6">
+          <Button
+            asChild
+            variant="outline"
+            className="w-fit border-white/10 bg-white/6 text-white hover:bg-white/10 hover:text-white"
+          >
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Link>
+          </Button>
+          <Card className="overflow-hidden border-white/12 bg-[linear-gradient(180deg,rgba(8,19,29,0.96),rgba(8,19,29,0.82))] shadow-[0_24px_80px_rgba(8,19,29,0.32)]">
+            <CardHeader className="gap-5 p-6 sm:p-8">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/58">
+                <Sparkles className="h-3.5 w-3.5" />
+                Continuation Playground
+              </div>
+              <div className="space-y-4">
+                <CardTitle className="text-3xl text-white sm:text-5xl">{data.title}</CardTitle>
+                <CardDescription className="max-w-3xl text-base text-white/70 sm:text-lg">
+                  {data.summary}
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 border-t border-white/8 px-6 pt-5 pb-6 sm:px-8 sm:pb-8">
+              <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.035] p-4 text-sm leading-6 text-white/68">
+                No public worlds are available right now.
+              </div>
+              <Button asChild variant="outline" className="w-fit border-white/10 bg-white/6 text-white hover:bg-white/10">
+                <Link href={data.alternateRoute.href}>{data.alternateRoute.label}</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -377,7 +414,7 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
                     size="sm"
                     className="border-white/10 bg-white/6 text-white hover:bg-white/10"
                   >
-                    <Link href="/neta-studio-continuation-engine">Fixture mode</Link>
+                    <Link href={data.alternateRoute.href}>{data.alternateRoute.label}</Link>
                   </Button>
                   {data.suggestedWorlds.slice(0, 3).map((world) => (
                     <Button
@@ -387,7 +424,7 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
                       size="sm"
                       className="border-white/10 bg-transparent text-white/72 hover:bg-white/8 hover:text-white"
                     >
-                      <Link href={`/neta-studio-continuation-engine?worldId=${encodeURIComponent(world.id)}`}>
+                      <Link href={`${data.routeBase}?worldId=${encodeURIComponent(world.id)}`}>
                         {world.name}
                       </Link>
                     </Button>
@@ -542,7 +579,7 @@ export function NetaStudioContinuationPlayground({ data }: PlaygroundProps) {
                 {data.suggestedWorlds.map((world) => (
                   <Link
                     key={world.id}
-                    href={`/neta-studio-continuation-engine?worldId=${encodeURIComponent(world.id)}`}
+                    href={`${data.routeBase}?worldId=${encodeURIComponent(world.id)}`}
                     className={
                       world.id === data.activeWorldId
                         ? "rounded-[1.4rem] border border-emerald-400/18 bg-emerald-400/10 p-4"

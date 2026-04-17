@@ -145,6 +145,11 @@ export type ContinuationPlaygroundData = {
   title: string;
   summary: string;
   mode: "fixture" | "live";
+  routeBase: string;
+  alternateRoute: {
+    href: string;
+    label: string;
+  };
   activeWorldId: string | null;
   suggestedWorlds: Array<{
     id: string;
@@ -333,6 +338,11 @@ export async function loadNetaStudioContinuationPlaygroundData(
       summary:
         "Live playground mode using a public neta-studio world snapshot as the real upstream input for continuation derivation.",
       mode: "live",
+      routeBase: "/neta-studio-continuation-engine",
+      alternateRoute: {
+        href: "/neta-studio-continuation-engine",
+        label: "Fixture mode",
+      },
       activeWorldId: snapshot.worldId,
       suggestedWorlds,
       fixtures: [fixture],
@@ -350,8 +360,84 @@ export async function loadNetaStudioContinuationPlaygroundData(
     summary:
       "Fixture-backed playground for validating whether a reusable context-engine can derive continuation candidates, rank offers, and compose execution requests from neta-studio world state.",
     mode: "fixture",
+    routeBase: "/neta-studio-continuation-engine",
+    alternateRoute: {
+      href: "/neta-studio-live-world-playground",
+      label: "Live worlds",
+    },
     activeWorldId: null,
     suggestedWorlds,
     fixtures,
+  };
+}
+
+export async function loadNetaStudioLiveWorldPlaygroundData(
+  worldId?: string | null,
+): Promise<ContinuationPlaygroundData> {
+  const engine = await loadEngineModule();
+  const worldList = await requestStudioJson<StudioWorldSummary[]>("/worlds");
+  const suggestedWorlds = worldList.slice(0, 8).map((world) => ({
+    id: world.id,
+    name: world.config?.name?.trim() || world.id,
+    atomCount: world.atomCount ?? 0,
+    workCount: world.workCount ?? 0,
+    updatedAt: world.updatedAt ?? 0,
+  }));
+
+  const selectedWorldId = worldId ?? suggestedWorlds[0]?.id ?? null;
+
+  if (!selectedWorldId) {
+    return {
+      caseSlug: "neta-studio-live-world-playground",
+      title: "Neta Studio Live World Playground",
+      summary:
+        "Use public neta-studio worlds as the upstream input and inspect what the continuation engine derives from real world state.",
+      mode: "live",
+      routeBase: "/neta-studio-live-world-playground",
+      alternateRoute: {
+        href: "/neta-studio-continuation-engine",
+        label: "Fixture engine",
+      },
+      activeWorldId: null,
+      suggestedWorlds,
+      fixtures: [],
+    };
+  }
+
+  const liveSnapshot = await requestStudioJson<StudioWorldApiSnapshot>(
+    `/worlds/${encodeURIComponent(selectedWorldId)}`,
+  );
+  const liveChatSession = await requestStudioJson<{
+    session: StudioChatSessionPayload | null;
+    updatedAt: number | null;
+  }>(`/worlds/${encodeURIComponent(selectedWorldId)}/chat-session`);
+  const snapshot = engine.adaptNetaStudioRuntimeInput({
+    snapshot: liveSnapshot,
+    chatSession: liveChatSession.session,
+  });
+  const fixture = buildFixtureViewModel(
+    {
+      id: "live-world",
+      label: "Live world",
+      description: "Directly assembled from a public neta-studio world snapshot and live chat session.",
+    },
+    snapshot,
+    engine,
+  );
+
+  return {
+    caseSlug: "neta-studio-live-world-playground",
+    title: "Neta Studio Live World Playground",
+    summary:
+      "Public-world playground that feeds real neta-studio world data into the continuation engine and lets you inspect the resulting context, candidates, offers, and request payload.",
+    mode: "live",
+    routeBase: "/neta-studio-live-world-playground",
+    alternateRoute: {
+      href: "/neta-studio-continuation-engine",
+      label: "Fixture engine",
+    },
+    activeWorldId: snapshot.worldId,
+    suggestedWorlds,
+    fixtures: [fixture],
   };
 }
